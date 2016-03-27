@@ -1,0 +1,2 @@
+#!/bin/sh
+smmmake --clean; smmmake --configure-code --input=data/small.adpcm --output=output_small.pcm --num-regions 2

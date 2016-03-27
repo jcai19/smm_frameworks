@@ -5,14 +5,16 @@ import openpyxl
 
 r = 0
 
-def getStatsHelper(ws, progName, expType, CMType):
-#    	print progName + ' ' + expType + ' ' + CMType
+def getStatsHelper(ws, progName, subpath):
 #    	print r
+    	CMType = os.path.basename(subpath)
 	c = 1
 	ws.cell(row = r, column = c).value = progName
     	c = c+1
 
-	output = subprocess.Popen("grep sim_insts m5out/"+expType+"/"+CMType+"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+
+	print subpath
+	output = subprocess.Popen("grep sim_insts "+ subpath +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
     	if len(tempList) == 0:
     		return
@@ -25,14 +27,14 @@ def getStatsHelper(ws, progName, expType, CMType):
 		ws.cell(row = r, column = c).value = numInsts*TPI
 		return
 
-	output = subprocess.Popen("grep system.cpu.workload.num_dmacalls m5out/"+expType+"/"+CMType+"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	output = subprocess.Popen("grep num_dmacalls "+ subpath +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
 	numDMA = float(tempList[1])
 #	print numDMA
 	ws.cell(row = r, column = c).value = numDMA
     	c = c+1
 
-	output = subprocess.Popen("grep system.cpu.workload.bytes_transferred_dma m5out/"+expType+"/"+CMType+"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	output = subprocess.Popen("grep bytes_transferred_dma "+ subpath +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
 	DMASize = float(tempList[1])
 #	print DMASize
@@ -42,22 +44,35 @@ def getStatsHelper(ws, progName, expType, CMType):
 	ws.cell(row = r, column = c).value = numInsts*TPI + numDMA*startupCost + DMASize*transferTimePerByte
 	c = c + 1
 
-	output = subprocess.Popen("grep num_func_calls_cget m5out/"+expType+"/"+CMType+"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	output = subprocess.Popen("grep num_func_calls_cget "+ subpath + "/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
 	numCalls_cget = float(tempList[1])
 	ws.cell(row = r, column = c).value = numCalls_cget
     	c = c+1
 
-	output = subprocess.Popen("grep num_insts_cget m5out/"+expType+"/"+CMType+"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	output = subprocess.Popen("grep num_insts_cget "+ subpath +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
 	numInsts_cget = float(tempList[1])
 	ws.cell(row = r, column = c).value = numInsts_cget
     	c = c+1
 
+	output = subprocess.Popen("grep num_func_calls_ccall "+ subpath + "/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	numCalls_ccall = float(tempList[1])
+	ws.cell(row = r, column = c).value = numCalls_ccall
+    	c = c+1
+
+	output = subprocess.Popen("grep num_insts_ccall "+ subpath +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	numInsts_ccall = float(tempList[1])
+	ws.cell(row = r, column = c).value = numInsts_ccall
+    	c = c+1
 
 
 
-def getStats(expType):
+
+
+def getStats(subpath):
 
 	wb = openpyxl.Workbook()
 	ws1 = wb.active
@@ -65,35 +80,45 @@ def getStats(expType):
 	ws2 = wb.create_sheet("smmcm")
 	ws3 = wb.create_sheet("smmecm")
 
-	ws1['A1'] = "Benchmarks"
-	ws1['B1'] = "SPM Size"
-	ws1['C1'] = "Number of Instructions"
-	ws1['D1'] = "Execution Time"
+	ws1['A1'] = "benchmarks"
+#	ws1['B1'] = "SPM Size"
+#	ws1['C1'] = "Number of Instructions"
+#	ws1['D1'] = "Execution Time"
 
-	ws2['A1'] = "Benchmarks"
-	ws2['B1'] = "Number of DMA"
-	ws2['C1'] = "DMA Size"
-	ws2['D1'] = "Number of Instructions"
-	ws2['E1'] = "Execution Time"
-	ws2['F1'] = "Number of Calls of cget"
-	ws2['G1'] = "Number of Instructions Executed of cget"
+	ws1['B1'] = "# insts"
+	ws1['C1'] = "execution time"
 
-	ws3['A1'] = "Benchmarks"
-	ws3['B1'] = "Number of DMA"
-	ws3['C1'] = "DMA Size"
-	ws3['D1'] = "Number of Instructions"
-	ws3['E1'] = "Execution Time"
-	ws3['F1'] = "Number of Calls of cget"
-	ws3['G1'] = "Number of Instructions Executed of cget"
+	ws2['A1'] = "benchmarks"
+	ws2['B1'] = "# insts"
+	ws2['C1'] = "# DMA"
+	ws2['D1'] = "DMA size"
+	ws2['E1'] = "exec time"
+	ws2['F1'] = "# calls of c_get"
+	ws2['G1'] = "# insts of c_get"
+	ws2['H1'] = "# calls of c_call*"
+	ws2['I1'] = "# insts of c_call*"
 
+	ws3['A1'] = "benchmarks"
+	ws3['B1'] = "# insts"
+	ws3['C1'] = "# DMA"
+	ws3['D1'] = "DMA size"
+	ws3['E1'] = "exec time"
+	ws3['F1'] = "# calls of c_get"
+	ws3['G1'] = "# insts of c_get"
+	ws3['H1'] = "# calls of c_call*"
+	ws3['I1'] = "# insts of c_call*"
+
+
+	
 
 	root = os.getcwd()
 	directories = []
 	for path in os.listdir(root):
 		if os.path.isdir(path):
 			directories.append(path)
-#	directories = ['stringsearch','test2']
-	directories.remove('patricia')
+#	directories = ['sha']
+	directories.remove('CRC32')
+	directories = sorted(directories, key=str.lower)
 	print directories
 
 
@@ -102,21 +127,28 @@ def getStats(expType):
 	for directory in directories:
 		os.chdir(directory)
 		print directory
-		getStatsHelper(ws1, directory, expType, "smm");
-		getStatsHelper(ws2, directory, expType, "smmcm");
-		getStatsHelper(ws3, directory, expType, "smmecm");
+		getStatsHelper(ws1, directory, subpath + "/smm");
+		getStatsHelper(ws2, directory, subpath + "/smmcm");
+		getStatsHelper(ws3, directory, subpath + "/smmecm");
 
 		r = r+1
 		os.chdir(root)
-    	
-	wb.save("experiment-" + expType +".xlsx")
+
+    	filename = ""
+	expType = os.path.basename(subpath)
+    	if (expType != "min" and expType != "mid" and expType !=  "max"):
+		filename = "experiment.xlsx"
+	else:
+		filename = "experiment-" + expType +".xlsx"
+	wb.save(filename)
+
 
 
 TPI = 0.9375 # 3 cycles
 startupCost = 91
 transferTimePerByte = 0.075
-getStats("min")
-getStats("mid")
-getStats("max")
+getStats("m5out/min")
+getStats("m5out/max")
+getStats("m5out")
 
 

@@ -1,0 +1,2 @@
+#!/bin/sh
+smmmake --clean; smmmake --configure-code --args "input.dat" --output="output.txt" --num-regions 2
