@@ -449,7 +449,7 @@ clean:
 			f.write(makefile)
 
 # Create a makefile for SMM code management
-def create_smm_code_makefile(arguments="", infile = "", outfile="", spmsize = 256):
+def create_smm_code_makefile(arguments="", infile = "", outfile="", spmsize = 0, numregions = 0):
 	#  make file
 	makefile = """
 PROGRAM = ${program}
@@ -478,14 +478,16 @@ $(PROGRAM): $(OBJECTS)
 	objdump -d $@ > $@.dis
 
 
-cmh:
+overlay:
 	# Get user functions names
 	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm/build/Debug+Asserts/lib/LLVMSMMCMH.so -smmcmh-funcinfo --debug-only=smmcm-helper < $(PROGRAM).bc > /dev/null
 	# Get user functions code sizes
 	smmcode-size
 	-rm _func_names
 	# Get code overlay scheme
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm/build/Debug+Asserts/lib/LLVMSMMCMH.so -smmcmh-overlay -spm-size ${spm_size} < $(PROGRAM).bc > /dev/null
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm/build/Debug+Asserts/lib/LLVMSMMCMH.so -smmcmh-overlay ${specify_spm-size} ${specify_num-regions} < $(PROGRAM).bc > /dev/null
+
+linkerscript:
 	# Get the linker script based on overlay scheme
 	smmmake --configure-code-linkerscript
 
@@ -572,7 +574,14 @@ clean:
 				makefile = makefile.replace("${infile}", "< " + infile)
 			else:
 				makefile = makefile.replace("${infile}", "")
-			makefile = makefile.replace("${spm_size}", str(spmsize))
+			if (spmsize != 0):
+				makefile = makefile.replace("${specify_spm-size}", "-spm-size " + str(spmsize))
+			else:
+				makefile = makefile.replace("${specify_spm-size}", "")
+			if (numregions != 0):
+				makefile = makefile.replace("${specify_num-regions}", "-num-regions " + str(numregions))
+			else:
+				makefile = makefile.replace("${specify_num-regions}", "")
 			f.write(makefile)
 
 
@@ -614,27 +623,27 @@ def create_smm_code_linkerscript():
 	#print overlay_script
 
 	# Create the linker script with SPM
-	if (not os.path.isfile("spm.ld")): 
-		with open('spm.ld', 'w') as linker_script:
-			implicit_linker_script = subprocess.Popen("ld --verbose", stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
-			i = 0
-			while i <  range(len(implicit_linker_script)):
-		    		line = implicit_linker_script[i]
-    				while (line.find("==================================================") == -1):
-					i = i+1
-					line = implicit_linker_script[i]
-				i = i + 1
-    				line = implicit_linker_script[i]
-				while (line.find("==================================================") == -1):
-					if line.find("executable_start") != -1:
-#						linker_script.write(line.replace("0x400000", "0x000000") + "\n  .spm_begin : { FILL(0x0) QUAD(0x0) QUAD(0x0) }\n  . = ALIGN(0x10);\n  _spm_begin = .;\n  . = . + 0x100000;\n  _spm_end = .;\n")
-						linker_script.write(line.replace("0x400000", "0x000000") + "\n  . = ALIGN(0x10);\n  _spm_begin = .;\n  . = . + 0x100000;\n  _spm_end = .;\n")
-						linker_script.writelines(overlay_script)
-					else:
-    						linker_script.write(line + "\n")
-					i = i+1
-					line = implicit_linker_script[i]
-				break;
+#	if (not os.path.isfile("spm.ld")): 
+	with open('spm.ld', 'w') as linker_script:
+		implicit_linker_script = subprocess.Popen("ld --verbose", stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+		i = 0
+		while i <  range(len(implicit_linker_script)):
+	    		line = implicit_linker_script[i]
+    			while (line.find("==================================================") == -1):
+				i = i+1
+				line = implicit_linker_script[i]
+			i = i + 1
+    			line = implicit_linker_script[i]
+			while (line.find("==================================================") == -1):
+				if line.find("executable_start") != -1:
+#					linker_script.write(line.replace("0x400000", "0x000000") + "\n  .spm_begin : { FILL(0x0) QUAD(0x0) QUAD(0x0) }\n  . = ALIGN(0x10);\n  _spm_begin = .;\n  . = . + 0x100000;\n  _spm_end = .;\n")
+					linker_script.write(line.replace("0x400000", "0x000000") + "\n  . = ALIGN(0x10);\n  _spm_begin = .;\n  . = . + 0x100000;\n  _spm_end = .;\n")
+					linker_script.writelines(overlay_script)
+				else:
+    					linker_script.write(line + "\n")
+				i = i+1
+				line = implicit_linker_script[i]
+			break;
 
 
 
@@ -753,7 +762,7 @@ def create_cache_runme(dsize = "", arguments="", infile="", outfile=""):
 # Get options
 if __name__ == "__main__":
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["help", "configure-cache", "configure-heap", "configure-stack", "configure-global", "configure-code", "configure-code-linkerscript", "spm-size=", "args=", "input=", "output=", "clean", "l1d_size="]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["help", "configure-cache", "configure-heap", "configure-stack", "configure-global", "configure-code", "configure-code-linkerscript", "spm-size=", "num-regions=", "args=", "input=", "output=", "clean", "l1d_size="]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
@@ -761,11 +770,12 @@ if __name__ == "__main__":
 	infile = ""
 	outfile = ""
 	config = 0
-	spmsize = 256
+	spmsize = 0
+	numregions = 0
 	dsize = ""
 	for opt, arg in opts:
 		if opt in ("-h", "--help"):
-			print 'smmmake --configure-stack --configure-heap --configure-global --configure-code --configure-code-linkerscript --spm-size --configure-cache --args --input --output --clean'
+			print 'smmmake --configure-stack --configure-heap --configure-global --configure-code --configure-code-linkerscript --spm-size --num-regions --configure-cache --args --input --output --clean'
 			sys.exit()
 		elif opt in ("--configure-cache"):
 			config = 1
@@ -787,6 +797,8 @@ if __name__ == "__main__":
 			outfile = arg
 		elif opt in("--spm-size"):
 			spmsize = arg
+		elif opt in("--num-regions"):
+			numregions = arg
 		elif opt in ("--clean"):
 			if (os.path.isfile("spm.ld")):
     				subprocess.Popen("rm spm.ld", stdout=subprocess.PIPE, shell=True)
@@ -816,7 +828,7 @@ if __name__ == "__main__":
 		create_smm_global_makefile(arguments, infile, outfile)
 		#create_smm_runme(arguments, infile, outfile)
     	if config == 5:
-		create_smm_code_makefile(arguments, infile, outfile, spmsize)
+		create_smm_code_makefile(arguments, infile, outfile, spmsize, numregions)
 		create_smm_code_runme(arguments, infile, outfile)
     	if config == 6:
 		create_smm_code_linkerscript()
