@@ -289,7 +289,8 @@ int main(int argc, char *argv[])
 	err = -6; goto exit;
     }
 
-    if(toupper(*argv[3]) == 'E')
+    //if(toupper(*argv[3]) == 'E')
+    if(1)
     {                           /* encryption in Cipher Block Chaining mode */
 	set_key(key, key_len, enc, ctx);
 
