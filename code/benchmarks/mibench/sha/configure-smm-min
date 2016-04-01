@@ -1,2 +1,2 @@
 #!/bin/sh
-smmmake --clean; smmmake --configure-code --args "input_small.asc" --output="output.txt" --spm-size 596
+smmmake --clean; smmmake --configure-code --args input_small.asc --output output.txt --spm-size 596

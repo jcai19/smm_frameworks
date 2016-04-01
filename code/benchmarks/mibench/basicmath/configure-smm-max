@@ -1,2 +1,2 @@
 #!/bin/sh
-smmmake --clean; smmmake --configure-code  --output=output_small.txt --spm-size 1878
+smmmake --clean; smmmake --configure-code --output output_small.txt --spm-size 1878

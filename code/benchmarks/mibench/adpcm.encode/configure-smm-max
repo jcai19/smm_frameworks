@@ -1,2 +1,2 @@
 #!/bin/sh
-smmmake --clean; smmmake --configure-code --input=data/small.pcm --output=output_small.adpcm --spm-size 500
+smmmake --clean; smmmake --configure-code --input data/small.pcm --output output_small.adpcm --spm-size 500
