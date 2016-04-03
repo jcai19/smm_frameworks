@@ -1,0 +1,34 @@
+#! /usr/bin/env python
+import os
+import subprocess
+
+progInput = {
+    "adpcm.decode":("--input data/small.adpcm --output=output_small.pcm",2), 
+    "adpcm.encode":("--input data/small.pcm --output output_small.adpcm", 2),
+    "basicmath":("--output output_small.txt",3),
+    "dijkstra":("--args input.dat --output output.txt",6),
+    "FFT":("--args \"4 4096\" --output output_small.txt", 6),
+    "IFFT":("--args \"4 8192 -i\" --output output_small.inv.txt", 6),
+    "rijndael.decode": ("--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"", 4),
+    "rijndael.encode": ("--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"", 5),
+    "sha": ("--args \"input_small.asc\" --output output.txt", 8),
+    "stringsearch": ("--output output.txt", 3)
+}
+
+cwd = os.getcwd()
+for prog,pair in progInput.iteritems():
+	print prog
+	os.chdir(prog)
+	command = ""
+	option = pair[0]
+#	print "\t" + option
+	numFuncs = pair[1]
+#	print "\t", numFuncs
+	for i in range(2, numFuncs+1):
+    		str_i = str(i);
+		command = command + "make clean; smmmake --clean; smmmake --configure-code "+option+" --num-regions "+str_i+"; make; make overlay; make linkerscript; make cm; make ecm; ./runme; mkdir m5out/spm/"+str_i+"; mv m5out/spm/smm* m5out/spm/"+str_i+"; ";
+		
+#	print command
+	subprocess.call(command, shell=True)
+    	os.chdir(cwd)
+    	

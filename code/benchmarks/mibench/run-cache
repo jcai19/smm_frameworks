@@ -2,14 +2,33 @@
 import os
 import subprocess
 
+progInput = {
+    "adpcm.decode":("--input data/small.adpcm --output=output_small.pcm",["512B"]), 
+    "adpcm.encode":("--input data/small.pcm --output output_small.adpcm", ["512B"]),
+    "basicmath":("--output output_small.txt",["2kB"]),
+    "dijkstra":("--args input.dat --output output.txt",["1kB"]),
+    "FFT":("--args \"4 4096\" --output output_small.txt", ["4kB"]),
+    "IFFT":("--args \"4 8192 -i\" --output output_small.inv.txt", ["4kB"]),
+    "rijndael.decode": ("--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"", ["8kB"]),
+    "rijndael.encode": ("--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"", ["8kB"]),
+    "sha": ("--args \"input_small.asc\" --output output.txt", ["1kB","2kB"]),
+    "stringsearch": ("--output output.txt", ["512B"])
+}
+
 cwd = os.getcwd()
-directories = []
-for path in os.listdir(cwd):
-	if os.path.isdir(path):
-		directories.append(path)
-for directory in directories:
-	os.chdir(directory)
-	print directory
-	command = "./configure-cache; make clean; make; ./runme"
+for prog,pair in progInput.iteritems():
+	print prog
+	os.chdir(prog)
+	command = ""
+	option = pair[0]
+#	print "\t" + option
+	iSizes = pair[1]
+#	print "\t", numFuncs
+	for i in range(len(iSizes)):
+    		idx = str(i+2);
+		command = command + "make clean; smmmake --clean; smmmake --configure-icache "+option+" --l1i_size " + iSizes[i] + "; make; ./runme; mkdir m5out/cache/"+idx+" ; mv m5out/cache/stats.txt m5out/cache/"+idx+"; ";
+		
+	print command
 	subprocess.call(command, shell=True)
-	os.chdir(cwd)
+    	os.chdir(cwd)
+    	
