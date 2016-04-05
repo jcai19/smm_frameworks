@@ -13,7 +13,7 @@ def getStatsHelper(ws, progName, subpath):
     	c = c+1
 
 
-	print subpath
+#	print subpath
 	output = subprocess.Popen("grep sim_insts "+ subpath +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
     	if len(tempList) == 0:
@@ -115,7 +115,9 @@ def getStats(directories):
 
 	global r
 	r = 2
-	for directory, numRegions in directories.iteritems():
+	for t in directories:
+	    	directory = t[0]
+		numRegions = t[1]
 		os.chdir(directory)
 		print directory
 		numRegionsStr = str(numRegions)
@@ -125,7 +127,7 @@ def getStats(directories):
 
 		r = r+1
 		os.chdir(root)
-	filename = "experiment.xlsx"
+	filename = "experiment-smm-max.xlsx"
 	wb.save(filename)
 
 
@@ -134,19 +136,22 @@ TPI = 0.9375 # 3 cycles
 startupCost = 91
 transferTimePerByte = 0.075
 
-directories = {
-    "adpcm.decode":2, 
-    "adpcm.encode":2,
-    "basicmath":2,
-    "dijkstra":2,
-    "FFT":2,
-    "IFFT":2,
-    "rijndael.decode":2,
-    "rijndael.encode":2,
-    "sha":2,
-    "stringsearch":2, 
-}
+directories = [
+    ("adpcm.decode",2), 
+    ("adpcm.encode",2),
+    ("basicmath",3),
+    ("dijkstra",6),
+    ("FFT",6),
+    ("IFFT",6),
+    ("rijndael.decode",4),
+    ("rijndael.encode",5),
+    ("sha",8),
+    ("stringsearch",3), 
+]
 
+dirctories = sorted(directories)
+
+print directories
 
 getStats(directories)
 

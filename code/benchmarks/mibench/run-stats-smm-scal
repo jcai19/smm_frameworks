@@ -80,6 +80,6 @@ for prog,numFuncs in progInput:
 	r = r+1
     	os.chdir(cwd)
 
-filename = "experiment-scal.xlsx"
+filename = "experiment-smm-scal.xlsx"
 wb.save(filename)
 

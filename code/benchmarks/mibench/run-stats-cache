@@ -14,7 +14,7 @@ def getCachePerformance(path):
 	output = subprocess.Popen("grep icache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
 	missCnt = float(tempList[1])
-#	print missCnt
+	print missCnt
 
 	return numInsts*TPI + missCnt*missPenalty
 
@@ -44,7 +44,7 @@ def getSPMPerformance(path):
 TPI = 0.9375 # 3 cycles
 startupCost = 91
 transferTimePerByte = 0.075
-missPenalty = 291.2
+missPenalty = 91
 
 progInput = [
 	("adpcm.decode",["2"]), 
