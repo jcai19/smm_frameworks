@@ -1,3 +1,3 @@
 #!/bin/sh
-#smmstack --clean; smmstack --configure-smm --args "input_small.asc" --output="output.txt" --spm-size 8964
-smmstack --clean; smmstack --configure-smm --args "input_small.asc" --output="output.txt" --spm-size 9176
+#smmmake --clean; smmmake --configure-stack --args "input_small.asc" --output="output.txt" --spm-size 8964
+smmmake --clean; smmmake --configure-stack --args "input_small.asc" --output="output.txt" --spm-size 9176

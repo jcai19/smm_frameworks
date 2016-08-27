@@ -1,3 +1,3 @@
 #!/bin/sh
-#smmstack --clean; smmstack --configure-smm --output="output.txt" --spm-size 104
-smmstack --clean; smmstack --configure-smm --output="output.txt" --spm-size 1736
+#smmmake --clean; smmmake --configure-stack --output="output.txt" --spm-size 104
+smmmake --clean; smmmake --configure-stack --output="output.txt" --spm-size 1736

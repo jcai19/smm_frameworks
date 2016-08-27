@@ -1,2 +1,2 @@
 #!/bin/sh
-smmstack --clean; smmstack --configure-smm --args "input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321" --spm-size 1192
+smmmake --clean; smmmake --configure-stack --args "input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321" --spm-size 1192

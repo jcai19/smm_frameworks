@@ -1,3 +1,3 @@
 #!/bin/sh
-#smmstack --clean; smmstack --configure-cache --l1d_size 132B --input=data/small.pcm --output=output_small.adpcm
-smmstack --clean; smmstack --configure-cache --l1d_size 2kB --input=data/small.pcm --output=output_small.adpcm
+#smmmake --clean; smmmake --configure-cache --l1d_size 132B --input=data/small.pcm --output=output_small.adpcm
+smmmake --clean; smmmake --configure-cache --l1d_size 2kB --input=data/small.pcm --output=output_small.adpcm

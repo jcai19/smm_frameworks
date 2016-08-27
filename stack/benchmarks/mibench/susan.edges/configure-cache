@@ -1,2 +1,2 @@
 #!/bin/sh
-smmstack --clean; smmstack --configure-cache --l1d_size 512kB --args "input_small.pgm output_small.edges.pgm -e"
+smmmake --clean; smmmake --configure-cache --l1d_size 512kB --args "input_small.pgm output_small.edges.pgm -e"

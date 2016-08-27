@@ -1,3 +1,3 @@
 #!/bin/sh
-#smmstack --clean; smmstack --configure-cache --l1d_size 8192B --args "input_small.asc" --output="output.txt"
-smmstack --clean; smmstack --configure-cache --l1d_size 8kB --args "input_small.asc" --output="output.txt"
+#smmmake --clean; smmmake --configure-cache --l1d_size 8192B --args "input_small.asc" --output="output.txt"
+smmmake --clean; smmmake --configure-cache --l1d_size 8kB --args "input_small.asc" --output="output.txt"

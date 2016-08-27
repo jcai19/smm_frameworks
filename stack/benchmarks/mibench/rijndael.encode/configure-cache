@@ -1,3 +1,3 @@
 #!/bin/sh
-#smmstack --clean; smmstack --configure-cache --l1d_size 2048B --args "input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321"
-smmstack --clean; smmstack --configure-cache --l1d_size 2kB --args "input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321"
+#smmmake --clean; smmmake --configure-cache --l1d_size 2048B --args "input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321"
+smmmake --clean; smmmake --configure-cache --l1d_size 2kB --args "input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321"
