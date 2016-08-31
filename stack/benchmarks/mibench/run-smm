@@ -8,11 +8,13 @@ for path in os.listdir(cwd):
 	if os.path.isdir(path):
 		directories.append(path)
 #directories = [ 'stringsearch', 'sha','rijndael', 'susan']
-directories.remove('patricia')
+#directories.remove('patricia')
 print directories
 
 for directory in directories:
 	os.chdir(directory)
-	command = "./configure-smm-middle; make clean; make; make once"
+#	command = "./configure-smm-mid; make clean; make; make once"
+#	command = "./configure-smm-mid; make clean; make; make sm; make opt"
+	command = "./runme"
 	subprocess.call(command, shell=True)
 	os.chdir(cwd)

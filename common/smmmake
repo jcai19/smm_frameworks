@@ -140,7 +140,8 @@ clean:
     				line = inFile[i]
 				while (line.find("==================================================") == -1):
 					if line.find("executable_start") != -1:
-					  	outFile.write(line.replace("0x400000", "0x000000") + "\n  _spm_begin = .;\n  . = . + 0x100000;\n  _spm_end = .;\n")
+#					  	outFile.write(line.replace("0x400000", "0x000000") + "\n  _spm_begin = .;\n  . = . + 0x100000;\n  _spm_end = .;\n")
+					  	outFile.write(line + "\n  _spm_begin = .;\n  . = . + 0x100000;\n  _spm_end = .;\n")
 					else:
     						outFile.write(line + "\n")
 					i = i+1
@@ -200,8 +201,8 @@ def create_smm_stack_runme(arguments="", infile = "", outfile=""):
 			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
 			text = "$SIMDIR/build/X86/gem5.opt -q -r -d m5out/spm/smm $SIMDIR/configs/example/se.py --cpu-type=atomic -c " + program
 			sm_text = "$SIMDIR/build/X86/gem5.opt -q -r -d m5out/spm/smmsm $SIMDIR/configs/example/se.py --cpu-type=atomic -c sm_" + program
-			ssm_text = "#$SIMDIR/build/X86/gem5.opt -q -r -d m5out/spm/smmssm $SIMDIR/configs/example/se.py --cpu-type=atomic -c ssm_" + program
-			esm_text = "#$SIMDIR/build/X86/gem5.opt -q -r -d m5out/spm/smmesm $SIMDIR/configs/example/se.py --cpu-type=atomic -c esm_" + program
+			ssm_text = "$SIMDIR/build/X86/gem5.opt -q -r -d m5out/spm/smmssm $SIMDIR/configs/example/se.py --cpu-type=atomic -c ssm_" + program
+			esm_text = "$SIMDIR/build/X86/gem5.opt -q -r -d m5out/spm/smmesm $SIMDIR/configs/example/se.py --cpu-type=atomic -c esm_" + program
 			if (arguments != ""):
 				text = text + " -o \"" + arguments + "\""
 				sm_text = sm_text + " -o \"" + arguments.replace("output", "sm_output", 1) + "\""
@@ -724,33 +725,31 @@ PROGRAM = ${program}
 INCLUDEDIRS=
 INCLUDE=
 LIBDIRS=
-LIBS = -lm
+LIBS = 
 
 OBJECTS = ${original_objects}
 CC=clang
-CFLAGS = $(INCLUDEDIRS) $(INCLUDE) -emit-llvm -c -O3 -fno-inline
+CFLAGS = $(INCLUDEDIRS) $(INCLUDE) -c -O3 -fno-inline
 LDFLAGS = $(LIBDIRS) $(LIBS) -static
 
 all: $(PROGRAM)
 
 $(PROGRAM): $(OBJECTS)
-	llvm-link -o basic_$@.bc $(OBJECTS)
-	opt -O3 -load $(HOME)/Applications/llvm/build/Debug+Asserts/lib/LLVMTest.so -test-cg < basic_$@.bc > $@.bc
-	#opt -O3 -disable-inlining < basic_$@.bc > $@.bc
+	llvm-link -o $@.bc $(OBJECTS)
+	#opt -O3 -load $(HOME)/Applications/llvm/build/Debug+Asserts/lib/LLVMTest.so -test-cg < $@.bc > 
 	llvm-dis < $@.bc > $@.ll
-	llc -O3 -o $@.s $@.bc
-	$(CC) -o $@ $@.s $(LDFLAGS)
+	$(CC) -o $@ $(CFLAGS) $@.bc $(LDFLAGS)
 	objdump -d $@ > $@.dis
 
 %.bc: %${source_file_extension}
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) -emit-llvm -c $< -o $@
 
 callgraph:
 	opt -O3 -disable-inlining -dot-callgraph < basic_$(PROGRAM).bc
 	dot -Tgif callgraph.dot -o basic_$(PROGRAM).gif
 
 clean:
-	-rm -rf  $(PROGRAM) *.s *.o *.bc *.ll *.dis  ${outfile} *.gif *.gif
+	-rm -rf  $(PROGRAM) *.s *.o *.bc *.ll *.dis  ${outfile} *.gif
     """
 	# Create the makefile using the created linker script
 	if (not os.path.isfile("Makefile")): 
