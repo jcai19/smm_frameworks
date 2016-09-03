@@ -7,16 +7,17 @@
 #define putSP(sp) { __asm __volatile("mov %0, %%rsp;\n"::"m"(sp):"%rsp");}
 
 typedef struct {
-	char *spm_addr; // location when present in SPM
-	char *mem_addr; // location if evicted to memory
-	unsigned long long ssize; // size of stack frame
+	char *spm_addr; // location in the SPM right before eviction
+	char *mem_addr; // location in the main memory right after eviction
+	unsigned long long ssize; // size of stack frames being evicted
 	int status; // --1: resides in SPM; --0 : resides in memory
 } STACK_ENTRY;
 
-extern char _spm_begin, _spm_end;
+extern char _spm_stack_begin, _spm_stack_end;
 extern char *_spm_stack_base, *_mem_stack_base;
-extern long long int _stack_depth;
-extern STACK_ENTRY _stack[20];
+extern long long int _mem_stack_depth;
+extern STACK_ENTRY _mem_stack[20];
+extern char* _stack_pointer;
 
 void _sstore() __attribute__((noinline));
 void _sload() __attribute__((noinline));
