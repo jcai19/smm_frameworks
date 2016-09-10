@@ -1,0 +1,61 @@
+#! /usr/bin/env python
+
+import fnmatch, re, sys
+
+sSize = 0;
+libFunc = "";
+userFunc = "";
+libFuncDict = {};
+userFuncSet = set();
+libFuncSet = set();
+with open('wcg_nodes.txt', 'r') as f:
+	for line in f:
+		#print line, line.split(" ")
+		userFuncSet.add(line.split(" ")[0]);
+
+print userFuncSet
+with open('lib_funcs.txt', 'r') as f:
+	for line in f:
+		libFuncSet.add(line.split()[0]);
+print libFuncSet
+
+with open('m5out/smm/simerr', 'r') as f:
+	for line in f:
+		words = line.split(":")
+		numWords = len(words)
+    		if numWords == 0: 
+			continue
+		if words[0] == "Call" or words[0] == "Return":
+			assert(numWords == 4);
+			(caller, callee) = words[2].split("->");
+			caller = caller.strip();
+			callee = callee.strip();
+			sp = int(words[3].split("=")[1], 16);
+			# A user function calls a library function
+			if words[0] == "Call":
+				if caller in userFuncSet:
+					if callee not in userFuncSet:
+						sSize = sp + 0x8 # offset the value of SP register changed by the call instruction
+						libFunc = callee
+						#print caller, "calls ", callee, hex(sp);#, hex(int(sp, 16)+16)
+			elif words[0] == "Return":
+				if libFunc != "":
+					sSize = sSize - sp + 0x8 # offset the value of SP register changed by the call instruction
+					if not libFuncDict.has_key(libFunc):
+						libFuncDict[libFunc] = sSize;
+					#print libFunc, hex(sSize)
+					libFunc = "";
+					sSize = 0;
+
+#print userFuncSet
+print libFuncDict
+
+with open('wcg_nodes.txt', 'a') as f:
+	for key in libFuncDict:
+		for func in libFuncSet:
+			regex = fnmatch.translate('*' + func + '*');
+			reobj = re.compile(regex);
+			if reobj.match(key):
+				f.write(func + " " + str(libFuncDict[key]) + "\n");
+				break;
+
