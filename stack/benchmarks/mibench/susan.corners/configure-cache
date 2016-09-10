@@ -1,2 +1,0 @@
-#!/bin/sh
-smmmake --clean; smmmake --configure-cache --l1d_size 512kB --args "input_small.pgm output_small.corners.pgm -c"

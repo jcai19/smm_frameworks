@@ -1,9 +1,0 @@
-main 360168
-get_image 104
-getint 10072
-setup_brightness_lut 88
-susan_edges 936
-susan_thin 232
-edge_draw 88
-put_image 88
-susan_edges_small 224

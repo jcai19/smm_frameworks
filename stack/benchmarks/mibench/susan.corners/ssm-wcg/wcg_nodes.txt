@@ -1,7 +1,0 @@
-main 360168
-get_image 104
-getint 10072
-setup_brightness_lut 88
-susan_corners 584
-corner_draw 88
-put_image 88

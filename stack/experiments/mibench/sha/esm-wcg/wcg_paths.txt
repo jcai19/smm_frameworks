@@ -1,0 +1,80 @@
+main sha_stream 1
+main sha_stream 2
+main sha_stream 3
+main sha_stream 4
+main sha_stream 5
+main sha_stream 6
+main sha_stream 7
+main sha_stream 8
+main sha_stream 9
+main sha_print 10
+main fopen 11
+main printf 12
+main sha_stream 13
+main sha_stream 14
+main sha_stream 15
+main sha_stream 16
+main sha_stream 17
+main sha_stream 18
+main sha_stream 19
+main sha_stream 20
+main sha_stream 21
+main sha_print 22
+main fclose 23
+sha_stream sha_init 1
+sha_stream fread 2
+sha_stream sha_update 3
+sha_stream sha_update 4
+sha_stream fread 5
+sha_stream sha_final 6
+sha_stream sha_final 7
+sha_stream sha_final 8
+sha_stream sha_final 9
+sha_print printf 10
+sha_stream sha_init 13
+sha_stream fread 14
+sha_stream sha_update 15
+sha_stream sha_update 16
+sha_stream fread 17
+sha_stream sha_final 18
+sha_stream sha_final 19
+sha_stream sha_final 20
+sha_stream sha_final 21
+sha_print printf 22
+sha_update byte_reverse 3
+sha_update byte_reverse 15
+sha_update sha_transform 4
+sha_update sha_transform 16
+sha_final byte_reverse 6
+sha_final byte_reverse 18
+sha_final sha_transform 7
+sha_final sha_transform 19
+sha_final byte_reverse 8
+sha_final byte_reverse 20
+sha_final sha_transform 9
+sha_final sha_transform 21
+#
+main 272 1 sha_stream 8240 1 sha_init 16 0 
+main 272 1 sha_stream 8240 1 fread 312 0 
+main 272 1 sha_stream 8240 1 sha_update 208 1 byte_reverse 8 0 
+main 272 1 sha_stream 8240 1 sha_update 208 1 sha_transform 1152 0 
+main 272 1 sha_stream 8240 1 fread 312 0 
+main 272 1 sha_stream 8240 1 sha_final 80 1 byte_reverse 8 0 
+main 272 1 sha_stream 8240 1 sha_final 80 1 sha_transform 1152 0 
+main 272 1 sha_stream 8240 1 sha_final 80 1 byte_reverse 8 0 
+main 272 1 sha_stream 8240 1 sha_final 80 1 sha_transform 1152 0 
+main 272 1 sha_print 8 1 printf 2147483647 0 
+main 272 1 fopen 72 0 
+main 272 1 printf 2147483647 0 
+main 272 1 sha_stream 8240 1 sha_init 16 0 
+main 272 1 sha_stream 8240 1 fread 312 0 
+main 272 1 sha_stream 8240 1 sha_update 208 1 byte_reverse 8 0 
+main 272 1 sha_stream 8240 1 sha_update 208 1 sha_transform 1152 0 
+main 272 1 sha_stream 8240 1 fread 312 0 
+main 272 1 sha_stream 8240 1 sha_final 80 1 byte_reverse 8 0 
+main 272 1 sha_stream 8240 1 sha_final 80 1 sha_transform 1152 0 
+main 272 1 sha_stream 8240 1 sha_final 80 1 byte_reverse 8 0 
+main 272 1 sha_stream 8240 1 sha_final 80 1 sha_transform 1152 0 
+main 272 1 sha_print 8 1 printf 2147483647 0 
+main 272 1 fclose 40 0 
+#

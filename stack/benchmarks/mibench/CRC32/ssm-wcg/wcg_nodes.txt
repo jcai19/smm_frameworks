@@ -1,2 +1,0 @@
-main 120
-crc32file 88

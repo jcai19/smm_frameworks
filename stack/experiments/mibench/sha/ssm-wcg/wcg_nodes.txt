@@ -1,0 +1,9 @@
+dma 8
+sha_init 16
+sha_update 208
+sha_final 80
+sha_stream 8240
+sha_print 8
+byte_reverse 8
+sha_transform 1152
+main 272

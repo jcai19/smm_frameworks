@@ -1,0 +1,85 @@
+
+cd adpcm.decode
+echo $PWD
+diff output_small.pcm sm_output_small.pcm
+diff output_small.pcm ssm_output_small.pcm
+diff output_small.pcm esm_output_small.pcm
+cd ..
+
+cd adpcm.encode
+echo $PWD
+diff output_small.adpcm sm_output_small.adpcm
+diff output_small.adpcm ssm_output_small.adpcm
+diff output_small.adpcm esm_output_small.adpcm
+cd ..
+
+cd CRC32
+echo $PWD
+diff output_small.txt sm_output_small.txt
+diff output_small.txt ssm_output_small.txt
+diff output_small.txt esm_output_small.txt
+cd ..
+
+cd dijkstra
+echo $PWD
+diff output_small.dat sm_output_small.dat
+diff output_small.dat ssm_output_small.dat
+diff output_small.dat esm_output_small.dat
+cd ..
+
+
+cd patricia
+echo $PWD
+diff output_small.txt sm_output_small.txt
+diff output_small.txt ssm_output_small.txt
+diff output_small.txt esm_output_small.txt
+cd ..
+
+cd rijndael.decode
+echo $PWD
+diff output_small.dec sm_output_small.dec
+diff output_small.dec ssm_output_small.dec
+diff output_small.dec esm_output_small.dec
+cd ..
+
+cd rijndael.encode
+echo $PWD
+diff output_small.enc sm_output_small.enc
+diff output_small.enc ssm_output_small.enc
+diff output_small.enc esm_output_small.enc
+cd ..
+
+cd sha
+echo $PWD
+diff output_small.txt sm_output_small.txt
+diff output_small.txt ssm_output_small.txt
+diff output_small.txt esm_output_small.txt
+cd ..
+
+cd stringsearch
+echo $PWD
+diff output_small.txt sm_output_small.txt
+diff output_small.txt ssm_output_small.txt
+diff output_small.txt esm_output_small.txt
+cd ..
+
+cd susan.corners
+echo $PWD
+diff output_small.corners.pgm sm_output_small.corners.pgm
+diff output_small.corners.pgm ssm_output_small.corners.pgm
+diff output_small.corners.pgm esm_output_small.corners.pgm
+cd ..
+
+cd susan.edges
+echo $PWD
+diff output_small.edges.pgm sm_output_small.edges.pgm
+diff output_small.edges.pgm ssm_output_small.edges.pgm
+diff output_small.edges.pgm esm_output_small.edges.pgm
+cd ..
+
+cd susan.smoothing
+echo $PWD
+diff output_small.smoothing.pgm sm_output_small.smoothing.pgm
+diff output_small.smoothing.pgm ssm_output_small.smoothing.pgm
+diff output_small.smoothing.pgm esm_output_small.smoothing.pgm
+cd ..

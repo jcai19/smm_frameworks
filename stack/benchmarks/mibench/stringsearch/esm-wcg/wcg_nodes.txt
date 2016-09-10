@@ -1,7 +1,0 @@
-main 88
-init_search 56
-strsearch 104
-strncmp 8
-putchar 152
-strlen 8
-printf 1736

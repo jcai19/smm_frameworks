@@ -1,3 +1,0 @@
-#!/bin/sh
-#smmmake --clean; smmmake --configure-stack --input=data/small.pcm --output=output_small.adpcm --spm-size 104
-smmmake --clean; smmmake --configure-stack --input=data/small.pcm --output=output_small.adpcm --spm-size 1736

@@ -1,5 +1,0 @@
-main 56
-adpcm_decoder 104
-read 8
-fprintf 11768
-write 8

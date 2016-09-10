@@ -1,3 +1,0 @@
-#!/bin/sh
-#smmmake --clean; smmmake --configure-cache --l1d_size 512B --args small.udp --output output.txt
-smmmake --clean; smmmake --configure-cache --l1d_size 4kB --args small.udp --output output.txt

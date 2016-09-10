@@ -1,3 +1,0 @@
-#!/bin/sh
-#smmmake --clean; smmmake --configure-stack --args "data/small.pcm" --output=output.txt --spm-size 208
-smmmake --clean; smmmake --configure-stack --args "data/small.pcm" --output=output.txt --spm-size 2344

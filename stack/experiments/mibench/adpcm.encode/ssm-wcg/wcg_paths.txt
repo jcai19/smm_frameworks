@@ -1,0 +1,16 @@
+main read 1
+main perror 2
+main exit 3
+main adpcm_coder 4
+main write 5
+main read 6
+main printf 7
+#
+main 48 1 read 2147483647 0 
+main 48 1 perror 2147483647 0 
+main 48 1 exit 2147483647 0 
+main 48 1 adpcm_coder 240 0 
+main 48 1 write 2147483647 0 
+main 48 1 read 2147483647 0 
+main 48 1 printf 2147483647 0 
+#

@@ -1,2 +1,0 @@
-#!/bin/sh
-smmmake --clean; smmmake --configure-stack --args "input_small.pgm output_small.edges.pgm -e" --spm-size 360168

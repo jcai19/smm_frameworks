@@ -1,2 +1,0 @@
-main 56
-adpcm_decoder 104

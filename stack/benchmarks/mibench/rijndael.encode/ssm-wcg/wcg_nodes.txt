@@ -1,5 +1,0 @@
-main 1192
-set_key 88
-encfile 168
-fillrand 72
-encrypt 200

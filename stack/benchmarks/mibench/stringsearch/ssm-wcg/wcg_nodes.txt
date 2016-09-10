@@ -1,3 +1,0 @@
-main 88
-init_search 56
-strsearch 104

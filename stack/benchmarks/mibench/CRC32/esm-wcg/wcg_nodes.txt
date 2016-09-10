@@ -1,7 +1,0 @@
-main 120
-crc32file 88
-printf 1736
-ferror 8
-_IO_getc 280
-fopen 72
-fclose 40

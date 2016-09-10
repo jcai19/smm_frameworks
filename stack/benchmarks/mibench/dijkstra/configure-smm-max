@@ -1,3 +1,0 @@
-#!/bin/sh
-#smmmake --clean; smmmake --configure-stack --args "input.dat" --output="output.txt" --spm-size 448
-smmmake --clean; smmmake --configure-stack --args "input.dat" --output="output.txt" --spm-size 3680

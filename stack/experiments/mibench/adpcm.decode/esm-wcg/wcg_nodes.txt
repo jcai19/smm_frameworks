@@ -1,0 +1,7 @@
+dma 8
+main 48
+adpcm_coder 240
+adpcm_decoder 128
+read 8
+fprintf 11512
+write 8
