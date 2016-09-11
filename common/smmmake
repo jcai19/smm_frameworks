@@ -288,7 +288,7 @@ overlay:
 	codeSize user_defined_funcs.txt 2> user_defined_func_size.txt
 	-rm user_defined_funcs.txt
 	# Get code overlay scheme
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay -func-size ecm/user_defined_func_size.txt ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null 2> mapping.txt
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay -func-size user_defined_func_size.txt ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null 2> mapping.txt
 	# Get the linker script based on overlay scheme
 	smmmake --configure-code-linkerscript mapping.txt
 
