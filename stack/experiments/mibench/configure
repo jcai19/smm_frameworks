@@ -1,0 +1,72 @@
+#! /usr/bin/env python
+
+import math
+import os
+import subprocess
+
+argv = {
+    "adpcm.decode" : "--input data/small.adpcm --output output_small.pcm", 
+    "adpcm.encode" : "--input data/small.pcm --output output_small.adpcm",
+    #"basicmath" : "--output output_small.txt",
+    "CRC32" : "--args data/small.pcm --output output_small.txt",
+    "dijkstra" : "--args input.dat --output output_small.dat",
+    "patricia" : "--args small.udp --output output_small.txt",
+    #"FFT" : "--args \"4 4096\" --output output_small.txt",
+    #"IFFT" : "--args \"4 8192 -i\" --output output_small.inv.txt",
+    "rijndael.decode": "--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
+    "rijndael.encode": "--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
+    "sha": "--args \"input_small.asc\" --output output_small.txt",
+    "stringsearch": "--output output_small.txt",
+    "susan.corners" : "--args \"input_small.pgm output_small.corners.pgm -c\"",
+    "susan.edges": "--args \"input_small.pgm output_small.edges.pgm -e\"",
+    "susan.smoothing": "--args \"input_small.pgm output_small.smoothing.pgm -s\"",
+}
+
+cwd = os.getcwd()
+for prog, options in argv.iteritems():
+	print prog
+	os.chdir(prog)
+	#print "\t", options
+	f = open('esm-wcg/wcg_nodes.txt', 'r')
+	minStackSize = 0
+	midStackSize = 0
+	maxStackSize = 0
+	for line in f:
+		funcName, stackFrameSizeStr = line.split()
+		stackFrameSize = long(stackFrameSizeStr)
+		if stackFrameSize > minStackSize:
+			minStackSize = stackFrameSize
+		maxStackSize += stackFrameSize
+	f.close()
+	midStackSize = (minStackSize + maxStackSize) / 2
+	cacheSize = long(pow(2, math.ceil(math.log(midStackSize, 2))))
+
+	f = open('configure-spm-min', 'w')
+	command = "smmmake --clean; smmmake --configure-stack " + options + " --stack-size " + str(minStackSize)
+	print "\t", command
+	f.write(command)
+    	f.close()
+
+	f = open('configure-spm-mid', 'w')
+	command = "smmmake --clean; smmmake --configure-stack " + options + " --stack-size " + str(midStackSize)
+	print "\t", command
+	f.write(command)
+    	f.close()
+
+	f = open('configure-spm-max', 'w')
+	command = "smmmake --clean; smmmake --configure-stack " + options + " --stack-size " + str(maxStackSize) 
+	print "\t", command
+	f.write(command)
+    	f.close()
+
+	f = open('configure-cache', 'w')
+	command = "smmmake --clean; smmmake --configure-cache --l1d_size " + str(cacheSize) + " " + options
+	print "\t", command
+	f.write(command)
+    	f.close()
+
+	command = "chmod +x configure-cache; chmod +x configure-spm-min; chmod +x configure-spm-mid; chmod +x configure-spm-max;"
+	subprocess.call(command, shell=True)
+
+    	os.chdir(cwd)
+    	
