@@ -1,2 +1,0 @@
-#!/bin/sh
-smmmake --clean; smmmake --configure-code --args="4 8192 -i" --output output_small.inv.txt --num-regions 2
