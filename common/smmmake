@@ -9,7 +9,7 @@ import sys
 
 
 # Create a makefile for SMM stack management
-def create_smm_stack_makefile(arguments="", infile = "", outfile="", stacksize = 256):
+def create_makefile_smmstack(arguments="", infile = "", outfile="", stacksize = 256):
 	#  make file
 	makefile = """
 PROGRAM = ${program}
@@ -50,17 +50,23 @@ sm: $(OPT_OBJECTS)
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
 	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 
+ssm-cuts:
+	ssdm-cuts ssm-wcg/wcg_paths.txt ${stack_size} > wcg_cuts.txt
+
 ssm: $(OPT_OBJECTS)
 	llvm-link -o $@_raw_$(PROGRAM).bc $(OPT_OBJECTS)
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmssm --debug-only=smmssm < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmssm -call-stack-partition wcg_cuts.txt --debug-only=smmssm < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
 	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 
+esm-cuts:
+	ssdm-cuts esm-wcg/wcg_paths.txt ${stack_size} > wcg_cuts.txt
+
 esm: $(OPT_OBJECTS)
 	llvm-link -o $@_raw_$(PROGRAM).bc $(OPT_OBJECTS)
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm --debug-only=smmesm < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm -call-stack-partition wcg_cuts.txt --debug-only=smmesm < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -91,9 +97,6 @@ ssm-prof: $(PROF_OBJECTS)
 	mkdir ssm-wcg
 	mv wcg_nodes.txt wcg_paths.txt ssm-wcg
 
-ssm-cuts:
-	ssdm-cuts ssm-wcg/wcg_paths.txt ${stack_size} > wcg_cuts.txt
-
 esm-prof: $(PROF_OBJECTS)
 	llvm-link -o $@_$(PROGRAM).bc $(PROF_OBJECTS)
 
@@ -106,7 +109,7 @@ esm-prof: $(PROF_OBJECTS)
     	# Get the trace of function calls after turning on the trace of function calls in Gem5
 	./runme-prof
 	# Get the stack frame sizes of the library functions listed in lib_funcs.txt and add them to wcg_nodes.txt
-	smmstack-libfunc
+	libFuncFrameSize lib_funcs.txt wcg_nodes.txt
 
 	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
 	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $@_$(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
@@ -114,10 +117,6 @@ esm-prof: $(PROF_OBJECTS)
 	rm -rf esm-wcg
 	mkdir esm-wcg
 	mv wcg_nodes.txt wcg_paths.txt esm-wcg
-	
-esm-cuts:
-	ssdm-cuts esm-wcg/wcg_paths.txt ${stack_size} > wcg_cuts.txt
-
 
 opt:
 	make ssm-cuts
@@ -200,7 +199,7 @@ clean:
 			makefile = makefile.replace("${stack_size}", str(stacksize))
 			f.write(makefile)
 
-def create_smm_stack_runme(arguments="", infile = "", outfile=""):
+def create_runme_smmstack(arguments="", infile = "", outfile=""):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme")):
@@ -247,7 +246,7 @@ def create_smm_stack_runme(arguments="", infile = "", outfile=""):
     		subprocess.Popen("chmod 755 runme-prof", stdout=subprocess.PIPE, shell=True)
 
 # Create a makefile for SMM code management
-def create_smm_code_makefile(arguments="", infile = "", outfile="", codesize = 0, numregions = 0):
+def create_makefile_smmcode(arguments="", infile = "", outfile="", codesize = 0, numregions = 0):
 	#  make file
 	makefile = """
 PROGRAM = ${program}
@@ -277,21 +276,21 @@ $(PROGRAM): $(OBJECTS)
 
 overlay:
 	# Get user functions names
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-funcinfo --debug-only=smmcm-helper < $(PROGRAM).bc > /dev/null
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-funcinfo --debug-only=smmcm-funcinfo < $(PROGRAM).bc > /dev/null 2> user_defined_funcs.txt
 	# Get user functions code sizes
-	smmcode-size
-	-rm _func_names
+	codeSize user_defined_funcs.txt 2> user_defined_func_size.txt
+	-rm user_defined_funcs.txt
 	# Get code overlay scheme
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay -func-size user_defined_func_size.txt ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null 2> mapping.txt
 
 linkerscript:
 	# Get the linker script based on overlay scheme
-	smmmake --configure-code-linkerscript
+	smmmake --configure-code-linkerscript mapping.txt
 
 cm: $(OPT_OBJECTS)
 	llvm-link -o $@_raw_$(PROGRAM).bc $(OPT_OBJECTS)
 	# Insert code management functions
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm --debug-only=smmcm < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm -overlaying mapping.txt --debug-only=smmcm < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -300,7 +299,7 @@ cm: $(OPT_OBJECTS)
 ecm: $(OPT_OBJECTS)
 	llvm-link -o $@_raw_$(PROGRAM).bc $(OPT_OBJECTS)
 	# Insert code management functions based on code overlay scheme
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm --debug-only=smmecm < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -overlaying mapping.txt --debug-only=smmecm < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -323,7 +322,7 @@ callgraph:
 	dot -Tgif callgraph.dot -o basic_$(PROGRAM).gif
 
 clean:
-	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.gif ${outfile} cm_$(PROGRAM) ecm_$(PROGRAM) _func_size 
+	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.gif ${outfile} cm_$(PROGRAM) ecm_$(PROGRAM) user_defined_func_size.txt
     """
 
 
@@ -384,11 +383,11 @@ clean:
 
 
 # Create a makefile for SMM code management
-def create_smm_code_linkerscript():
+def create_linkerscript_smmcode(overlaying):
 	# Create the overlay of sections in the linker script from mapping file
 	overlay_script = []
 	overlays = dict()
-	with open("_mapping") as f:
+	with open(overlaying) as f:
 		numSec = int(f.readline())
 		for i in range(numSec):
 			overlays[i] = {"functions": []}
@@ -445,7 +444,7 @@ def create_smm_code_linkerscript():
 
 
 # Create runme file for a SMM architecture
-def create_smm_code_runme(arguments="", infile = "", outfile=""):
+def create_runme_smmcode(arguments="", infile = "", outfile=""):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme")):
@@ -475,7 +474,7 @@ def create_smm_code_runme(arguments="", infile = "", outfile=""):
 
 
 # Create a makefile for SMM application management
-def create_smm_app_makefile(arguments="", infile = "", outfile="", codesize = 0, stacksize = 0, numregions = 0):
+def create_makefile_smmapp(arguments="", infile = "", outfile="", codesize = 0, stacksize = 0, numregions = 0):
 	#  make file
 	makefile = """
 PROGRAM = ${program}
@@ -505,21 +504,32 @@ $(PROGRAM): $(OBJECTS)
 
 overlay:
 	# Get user functions names
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-funcinfo --debug-only=smmcm-helper < $(PROGRAM).bc > /dev/null
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-funcinfo --debug-only=smmcm-funcinfo < $(PROGRAM).bc > /dev/null 2> user_defined_funcs.txt
 	# Get user functions code sizes
-	smmcode-size
-	-rm _func_names
+	codeSize user_defined_funcs.txt 2> user_defined_func_size.txt
+	-rm user_defined_funcs.txt
 	# Get code overlay scheme
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay -func-size user_defined_func_size.txt ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null 2> mapping.txt
 
 linkerscript:
 	# Get the linker script based on overlay scheme
-	smmmake --configure-app-linkerscript
+	smmmake --configure-app-linkerscript mapping.txt
 
 am: $(OPT_OBJECTS)
 	llvm-link -o $@_raw_$(PROGRAM).bc $(OPT_OBJECTS)
 	# Insert code management functions
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMAM.so -smmam --debug-only=smmam < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMAM.so -smmam -overlaying mapping.txt --debug-only=smmam < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
+	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
+	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
+	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
+
+esm-cuts:
+	ssdm-cuts esm-wcg/wcg_paths.txt ${stack_size} > wcg_cuts.txt
+
+eam: $(OPT_OBJECTS)
+	llvm-link -o $@_raw_$(PROGRAM).bc $(OPT_OBJECTS)
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMEAM.so -smmeam -overlaying mapping.txt -call-stack-partition wcg_cuts.txt --debug-only=smmeam < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -537,7 +547,7 @@ esm-prof: $(PROF_OBJECTS)
     	# Get the trace of function calls after turning on the trace of function calls in Gem5
 	./runme-prof
 	# Get the stack frame sizes of the library functions listed in lib_funcs.txt and add them to wcg_nodes.txt
-	smmstack-libfunc
+	libFuncFrameSize lib_funcs.txt wcg_nodes.txt
 
 	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
 	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $@_$(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
@@ -545,17 +555,8 @@ esm-prof: $(PROF_OBJECTS)
 	rm -rf esm-wcg
 	mkdir esm-wcg
 	mv wcg_nodes.txt wcg_paths.txt esm-wcg
-	
-esm-cuts:
-	ssdm-cuts esm-wcg/wcg_paths.txt ${stack_size} > wcg_cuts.txt
 
-eam: $(OPT_OBJECTS)
-	llvm-link -o $@_raw_$(PROGRAM).bc $(OPT_OBJECTS)
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMEAM.so -smmeam --debug-only=smmeam < $@_raw_$(PROGRAM).bc > $@_$(PROGRAM).bc
-	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
-	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
-	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
+
 
 dma.bc:$(SMMDIR)/common/lib/dma.c
 	$(CC) -I$(SMMDIR)/common/include -include dma.h $(CFLAGS) $< -o $@
@@ -573,7 +574,7 @@ opt_%.bc: %${source_file_extension}
 	$(CC) -I$(SMMDIR)/stack/include -include stack_manager.h -I$(SMMDIR)/code/include -include code_manager.h $(CFLAGS) $< -o $@
 
 clean:
-	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.gif ${outfile} am_$(PROGRAM) _func_size 
+	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.gif ${outfile} am_$(PROGRAM) eam_$(PROGRAM) _func_size 
     """
 
 
@@ -638,11 +639,12 @@ clean:
 
 
 # Create a makefile for SMM applicatoin management
-def create_smm_app_linkerscript():
+def create_linkerscript_smmapp(overlaying):
 	# Create the overlay of sections in the linker script from mapping file
 	overlay_script = []
 	overlays = dict()
-	with open("_mapping") as f:
+	#print(overlaying)
+	with open(overlaying) as f:
 		numSec = int(f.readline())
 		for i in range(numSec):
 			overlays[i] = {"functions": []}
@@ -703,7 +705,7 @@ def create_smm_app_linkerscript():
 
 
 # Create runme file for a SMM architecture
-def create_smm_app_runme(arguments="", infile = "", outfile=""):
+def create_runme_smmapp(arguments="", infile = "", outfile=""):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme")):
@@ -715,15 +717,15 @@ def create_smm_app_runme(arguments="", infile = "", outfile=""):
 			if (arguments != ""):
 				text = text + " -o \"" + arguments + "\""
 				am_text = am_text + " -o \"" + arguments.replace("output", "am_output", 1) + "\""
-				eam_text = am_text + " -o \"" + arguments.replace("output", "eam_output", 1) + "\""
+				eam_text = eam_text + " -o \"" + arguments.replace("output", "eam_output", 1) + "\""
 			if (infile!= ""):
 				text = text + " --input=\"" + infile + "\""
 				am_text = am_text + " --input=\"" + infile + "\""
-				eam_text = am_text + " --input=\"" + infile + "\""
+				eam_text = eam_text + " --input=\"" + infile + "\""
 			if (outfile != ""):
 				text = text + " --output=\"" + outfile + "\""
 				am_text = am_text + " --output=\"am_" + outfile + "\""
-				eam_text = am_text + " --output=\"eam_" + outfile + "\""
+				eam_text = eam_text + " --output=\"eam_" + outfile + "\""
 			f.write(prolog + "\n")
 			f.write(text + "\n")
 			f.write(am_text + "\n")
@@ -732,7 +734,7 @@ def create_smm_app_runme(arguments="", infile = "", outfile=""):
 
 
 # Create a makefile for a cache-based architecture
-def create_cache_makefile(outfile=""):
+def create_makefile_cache(outfile=""):
 	#  Makefile
 	makefile = """
 PROGRAM = ${program}
@@ -793,7 +795,7 @@ clean:
 
 
 # Create a makefile for using hardware caching
-def create_icache_makefile(arguments="", infile = "", outfile=""):
+def create_makefile_icache(arguments="", infile = "", outfile=""):
 	#  make file
 	makefile = """
 PROGRAM = ${program}
@@ -890,7 +892,7 @@ clean:
 				makefile = makefile.replace("${infile}", "")
 			f.write(makefile)
 
-def create_cache_runme(dsize = "", isize = "", arguments="", infile="", outfile=""):
+def create_runme_cache(dsize = "", isize = "", arguments="", infile="", outfile=""):
 	program = os.path.basename(os.getcwd())
 	# Create a runme script
 	if (not os.path.isfile("runme")):
@@ -916,7 +918,7 @@ def create_cache_runme(dsize = "", isize = "", arguments="", infile="", outfile=
 # Get options
 if __name__ == "__main__":
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["help", "configure-cache", "configure-icache", "configure-stack", "configure-code", "configure-code-linkerscript", "configure-app", "configure-app-linkerscript", "stack-size=", "code-size=", "num-regions=", "args=", "input=", "output=", "clean", "l1d_size=", "l1i_size="]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["help", "configure-cache", "configure-icache", "configure-stack", "configure-code", "configure-code-linkerscript=", "configure-app", "configure-app-linkerscript=", "stack-size=", "code-size=", "num-regions=", "args=", "input=", "output=", "clean", "l1d_size=", "l1i_size="]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
@@ -927,6 +929,7 @@ if __name__ == "__main__":
 	stacksize = 0
 	codesize = 0
 	numregions = 0
+	overlaying = ""
 	dsize = ""
 	isize = ""
 	for opt, arg in opts:
@@ -941,10 +944,12 @@ if __name__ == "__main__":
 			config = 3
 		elif opt in ("--configure-code-linkerscript"):
 			config = 4
+			overlaying = arg
 		elif opt in ("--configure-app"):
 			config = 5
 		elif opt in ("--configure-app-linkerscript"):
 			config = 6
+			overlaying = arg
 		elif opt in ("--configure-icache"):
 			config = 7
 		elif opt in ("--args"):
@@ -978,22 +983,22 @@ if __name__ == "__main__":
 			assert False, "unhandled option"
 
 	if config == 1:
-		create_cache_makefile(outfile)
-		create_cache_runme(dsize, isize, arguments, infile, outfile)
+		create_makefile_cache(outfile)
+		create_runme_cache(dsize, isize, arguments, infile, outfile)
 	if config == 2:
-		create_smm_stack_makefile(arguments, infile, outfile, stacksize)
-		create_smm_stack_runme(arguments, infile, outfile)
+		create_makefile_smmstack(arguments, infile, outfile, stacksize)
+		create_runme_smmstack(arguments, infile, outfile)
     	if config == 3:
-		create_smm_code_makefile(arguments, infile, outfile, codesize, numregions)
-		create_smm_code_runme(arguments, infile, outfile)
+		create_makefile_smmcode(arguments, infile, outfile, codesize, numregions)
+		create_runme_smmcode(arguments, infile, outfile)
     	if config == 4:
-		create_smm_code_linkerscript()
+		create_linkerscript_smmcode(overlaying)
     	if config == 5:
-		create_smm_app_makefile(arguments, infile, outfile, codesize, stacksize, numregions)
-		create_smm_app_runme(arguments, infile, outfile)
+		create_makefile_smmapp(arguments, infile, outfile, codesize, stacksize, numregions)
+		create_runme_smmapp(arguments, infile, outfile)
     	if config == 6:
-		create_smm_app_linkerscript()
+		create_linkerscript_smmapp(overlaying)
     	if config == 7:
-		create_icache_makefile(arguments, infile, outfile)
-		create_cache_runme(dsize, isize, arguments, infile, outfile)
+		create_makefile_icache(arguments, infile, outfile)
+		create_runme_cache(dsize, isize, arguments, infile, outfile)
 
