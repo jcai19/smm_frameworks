@@ -1,0 +1,46 @@
+#! /usr/bin/env python
+
+import math
+import os
+import subprocess
+
+argv = {
+    "adpcm.decode" : "output_small.pcm", 
+    "adpcm.encode" : "output_small.adpcm",
+    "basicmath" : "output_small.txt",
+    "CRC32" : "output_small.txt",
+    "dijkstra" : "output_small.dat",
+    "patricia" : "output_small.txt",
+    "FFT" : "output_small.txt",
+    "IFFT" : "output_small.inv.txt",
+    "rijndael.decode": "output_small.dec",
+    "rijndael.encode": "output_small.enc",
+    "sha": "output_small.txt",
+    "stringsearch": "output_small.txt",
+    "susan.corners" : "output_small.corners.pgm",
+    "susan.edges": "output_small.edges.pgm",
+    "susan.smoothing": "output_small.smoothing.pgm",
+}
+
+cwd = os.getcwd()
+for prog, output in argv.iteritems():
+	if not os.path.isdir(prog):
+		#print prog, "does not exist"
+		continue
+	print prog
+	os.chdir(prog)
+
+	command = "diff " + output + " sm_" + output
+	print "\t", command
+	subprocess.call(command, shell=True)
+
+	command = "diff " + output + " ssm_" + output
+	print "\t", command
+	subprocess.call(command, shell=True)
+
+	command = "diff " + output + " esm_" + output
+	print "\t", command
+	subprocess.call(command, shell=True)
+
+    	os.chdir(cwd)
+    	

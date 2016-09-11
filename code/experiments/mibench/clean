@@ -12,5 +12,4 @@ for directory in directories:
 	print directory
 	command = "make clean; smmmake --clean; rm mapping.txt; rm _cache-size;"
 	subprocess.call(command, shell=True)
-    	print "\n"
 	os.chdir(cwd)
