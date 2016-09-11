@@ -9,6 +9,8 @@ for path in os.listdir(cwd):
 		directories.append(path)
 for directory in directories:
 	os.chdir(directory)
+	print directory
 	command = "make clean; smmmake --clean; rm mapping.txt; rm _cache-size;"
 	subprocess.call(command, shell=True)
+    	print "\n"
 	os.chdir(cwd)

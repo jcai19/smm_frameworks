@@ -7,12 +7,12 @@ import subprocess
 argv = {
     "adpcm.decode" : "--input data/small.adpcm --output output_small.pcm", 
     "adpcm.encode" : "--input data/small.pcm --output output_small.adpcm",
-    #"basicmath" : "--output output_small.txt",
+    "basicmath" : "--output output_small.txt",
     "CRC32" : "--args data/small.pcm --output output_small.txt",
     "dijkstra" : "--args input.dat --output output_small.dat",
     "patricia" : "--args small.udp --output output_small.txt",
-    #"FFT" : "--args \"4 4096\" --output output_small.txt",
-    #"IFFT" : "--args \"4 8192 -i\" --output output_small.inv.txt",
+    "FFT" : "--args \"4 4096\" --output output_small.txt",
+    "IFFT" : "--args \"4 8192 -i\" --output output_small.inv.txt",
     "rijndael.decode": "--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
     "rijndael.encode": "--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
     "sha": "--args \"input_small.asc\" --output output_small.txt",
@@ -24,6 +24,9 @@ argv = {
 
 cwd = os.getcwd()
 for prog, options in argv.iteritems():
+	if not os.path.isdir(prog):
+		print prog, "does not exist"
+		continue
 	print prog
 	os.chdir(prog)
 	#print "\t", options

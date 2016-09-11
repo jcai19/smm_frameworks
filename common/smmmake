@@ -274,6 +274,13 @@ $(PROGRAM): $(OBJECTS)
 	$(CC) -o $@ $@.s $(LDFLAGS)
 	objdump -d $@ > $@.dis
 
+prof:
+	# Get user functions names
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-funcinfo --debug-only=smmcm-funcinfo < $(PROGRAM).bc > /dev/null 2> user_defined_funcs.txt
+	# Get user functions code sizes
+	codeSize user_defined_funcs.txt 2> user_defined_func_size.txt
+	-rm user_defined_funcs.txt
+
 overlay:
 	# Get user functions names
 	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-funcinfo --debug-only=smmcm-funcinfo < $(PROGRAM).bc > /dev/null 2> user_defined_funcs.txt
@@ -281,9 +288,7 @@ overlay:
 	codeSize user_defined_funcs.txt 2> user_defined_func_size.txt
 	-rm user_defined_funcs.txt
 	# Get code overlay scheme
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay -func-size user_defined_func_size.txt ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null 2> mapping.txt
-
-linkerscript:
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay -func-size ecm/user_defined_func_size.txt ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null 2> mapping.txt
 	# Get the linker script based on overlay scheme
 	smmmake --configure-code-linkerscript mapping.txt
 
@@ -501,6 +506,12 @@ $(PROGRAM): $(OBJECTS)
 	llc -O3 -o $@.s $@.bc 
 	$(CC) -o $@ $@.s $(LDFLAGS)
 	objdump -d $@ > $@.dis
+prof:
+	# Get user functions names
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-funcinfo --debug-only=smmcm-funcinfo < $(PROGRAM).bc > /dev/null 2> user_defined_funcs.txt
+	# Get user functions code sizes
+	codeSize user_defined_funcs.txt 2> user_defined_func_size.txt
+	-rm user_defined_funcs.txt
 
 overlay:
 	# Get user functions names
@@ -510,8 +521,6 @@ overlay:
 	-rm user_defined_funcs.txt
 	# Get code overlay scheme
 	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay -func-size user_defined_func_size.txt ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null 2> mapping.txt
-
-linkerscript:
 	# Get the linker script based on overlay scheme
 	smmmake --configure-app-linkerscript mapping.txt
 
