@@ -1,13 +1,12 @@
-dma 8
 main 352
-pat_insert 368
+pat_insert 432
 pat_remove 8
 pat_search 96
 bit 8
 insertR 48
 malloc 40
 fopen 72
-__isoc99_sscanf 504
-fgets 392
 puts 40
+fgets 392
+__isoc99_sscanf 504
 printf 1608

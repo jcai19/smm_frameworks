@@ -96,23 +96,23 @@ main 352 1 exit 2147483647 0
 main 352 1 pat_search 96 1 bit 8 0 
 main 352 1 printf 2147483647 0 
 main 352 1 puts 2147483647 0 
-main 352 1 pat_insert 368 1 bit 8 0 
-main 352 1 pat_insert 368 1 free 2147483647 0 
-main 352 1 pat_insert 368 1 free 2147483647 0 
-main 352 1 pat_insert 368 1 malloc 2147483647 0 
-main 352 1 pat_insert 368 1 bcopy 2147483647 0 
-main 352 1 pat_insert 368 1 bcopy 2147483647 0 
-main 352 1 pat_insert 368 1 bcopy 2147483647 0 
-main 352 1 pat_insert 368 1 free 2147483647 0 
-main 352 1 pat_insert 368 1 free 2147483647 0 
-main 352 1 pat_insert 368 1 free 2147483647 0 
-main 352 1 pat_insert 368 1 bit 8 0 
-main 352 1 pat_insert 368 1 bit 8 0 
-main 352 1 pat_insert 368 1 bit 8 0 
-main 352 1 pat_insert 368 1 insertR 48 1 bit 8 0 
-main 352 1 pat_insert 368 1 insertR 48 1 bit 8 0 
-main 352 1 pat_insert 368 1 insertR 48 1 bit 8 0 
-main 352 1 pat_insert 368 1 insertR 48 1 bit 8 0 
+main 352 1 pat_insert 432 1 bit 8 0 
+main 352 1 pat_insert 432 1 free 2147483647 0 
+main 352 1 pat_insert 432 1 free 2147483647 0 
+main 352 1 pat_insert 432 1 malloc 2147483647 0 
+main 352 1 pat_insert 432 1 bcopy 2147483647 0 
+main 352 1 pat_insert 432 1 bcopy 2147483647 0 
+main 352 1 pat_insert 432 1 bcopy 2147483647 0 
+main 352 1 pat_insert 432 1 free 2147483647 0 
+main 352 1 pat_insert 432 1 free 2147483647 0 
+main 352 1 pat_insert 432 1 free 2147483647 0 
+main 352 1 pat_insert 432 1 bit 8 0 
+main 352 1 pat_insert 432 1 bit 8 0 
+main 352 1 pat_insert 432 1 bit 8 0 
+main 352 1 pat_insert 432 1 insertR 48 1 bit 8 0 
+main 352 1 pat_insert 432 1 insertR 48 1 bit 8 0 
+main 352 1 pat_insert 432 1 insertR 48 1 bit 8 0 
+main 352 1 pat_insert 432 1 insertR 48 1 bit 8 0 
 main 352 1 fwrite 2147483647 0 
 main 352 1 exit 2147483647 0 
 #

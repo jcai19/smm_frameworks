@@ -299,44 +299,44 @@ main 360624 1 usage 64 1 exit 2147483647 0
 main 360624 1 setup_brightness_lut 64 1 malloc 40 0 
 main 360624 1 setup_brightness_lut 64 1 exp 40 0 
 main 360624 1 setup_brightness_lut 64 1 exp 40 0 
-main 360624 1 susan_smoothing 816 1 printf 1608 0 
-main 360624 1 susan_smoothing 816 1 puts 2147483647 0 
-main 360624 1 susan_smoothing 816 1 puts 2147483647 0 
-main 360624 1 susan_smoothing 816 1 exit 2147483647 0 
-main 360624 1 susan_smoothing 816 1 printf 1608 0 
-main 360624 1 susan_smoothing 816 1 exit 2147483647 0 
-main 360624 1 susan_smoothing 816 1 malloc 40 0 
-main 360624 1 susan_smoothing 816 1 enlarge 192 0 
-main 360624 1 susan_smoothing 816 1 malloc 40 0 
-main 360624 1 susan_smoothing 816 1 exp 40 0 
-main 360624 1 susan_smoothing 816 1 median 608 0 
-main 360624 1 susan_smoothing 816 1 median 608 0 
+main 360624 1 susan_smoothing 896 1 printf 1608 0 
+main 360624 1 susan_smoothing 896 1 puts 2147483647 0 
+main 360624 1 susan_smoothing 896 1 puts 2147483647 0 
+main 360624 1 susan_smoothing 896 1 exit 2147483647 0 
+main 360624 1 susan_smoothing 896 1 printf 1608 0 
+main 360624 1 susan_smoothing 896 1 exit 2147483647 0 
+main 360624 1 susan_smoothing 896 1 malloc 40 0 
+main 360624 1 susan_smoothing 896 1 enlarge 192 0 
+main 360624 1 susan_smoothing 896 1 malloc 40 0 
+main 360624 1 susan_smoothing 896 1 exp 40 0 
+main 360624 1 susan_smoothing 896 1 median 1776 0 
+main 360624 1 susan_smoothing 896 1 median 1776 0 
 main 360624 1 malloc 40 0 
 main 360624 1 setup_brightness_lut 64 1 malloc 40 0 
 main 360624 1 setup_brightness_lut 64 1 exp 40 0 
 main 360624 1 setup_brightness_lut 64 1 exp 40 0 
-main 360624 1 susan_principle_small 240 0 
-main 360624 1 susan_principle 272 0 
-main 360624 1 int_to_uchar 8 0 
+main 360624 1 susan_principle_small 192 0 
+main 360624 1 susan_principle 224 0 
+main 360624 1 int_to_uchar 304 0 
 main 360624 1 malloc 40 0 
-main 360624 1 susan_edges_small 560 1 sqrtf 2147483647 0 
-main 360624 1 susan_edges 1856 1 sqrtf 2147483647 0 
-main 360624 1 susan_thin 608 0 
-main 360624 1 edge_draw 32 0 
+main 360624 1 susan_edges_small 560 1 sqrtf 8 0 
+main 360624 1 susan_edges 1888 1 sqrtf 8 0 
+main 360624 1 susan_thin 488 0 
+main 360624 1 edge_draw 24 0 
 main 360624 1 malloc 40 0 
 main 360624 1 setup_brightness_lut 64 1 malloc 40 0 
 main 360624 1 setup_brightness_lut 64 1 exp 40 0 
 main 360624 1 setup_brightness_lut 64 1 exp 40 0 
-main 360624 1 susan_principle 272 0 
-main 360624 1 int_to_uchar 8 0 
-main 360624 1 susan_corners_quick 832 1 fwrite 360 0 
-main 360624 1 susan_corners_quick 832 1 exit 2147483647 0 
-main 360624 1 susan_corners 1024 1 malloc 40 0 
-main 360624 1 susan_corners 1024 1 malloc 40 0 
-main 360624 1 susan_corners 1024 1 fwrite 360 0 
-main 360624 1 susan_corners 1024 1 exit 2147483647 0 
-main 360624 1 susan_corners 1024 1 free 2147483647 0 
-main 360624 1 susan_corners 1024 1 free 2147483647 0 
+main 360624 1 susan_principle 224 0 
+main 360624 1 int_to_uchar 304 0 
+main 360624 1 susan_corners_quick 816 1 fwrite 360 0 
+main 360624 1 susan_corners_quick 816 1 exit 2147483647 0 
+main 360624 1 susan_corners 992 1 malloc 40 0 
+main 360624 1 susan_corners 992 1 malloc 40 0 
+main 360624 1 susan_corners 992 1 fwrite 360 0 
+main 360624 1 susan_corners 992 1 exit 2147483647 0 
+main 360624 1 susan_corners 992 1 free 2147483647 0 
+main 360624 1 susan_corners 992 1 free 2147483647 0 
 main 360624 1 corner_draw 8 0 
 main 360624 1 put_image 80 1 fopen 72 0 
 main 360624 1 put_image 80 1 fprintf 2147483647 0 

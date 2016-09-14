@@ -1,6 +1,5 @@
-dma 8
 main 352
-pat_insert 368
+pat_insert 432
 pat_remove 8
 pat_search 96
 bit 8

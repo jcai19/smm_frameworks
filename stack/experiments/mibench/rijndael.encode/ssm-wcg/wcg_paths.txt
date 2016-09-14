@@ -64,43 +64,43 @@ encfile encrypt 35
 encfile fwrite 36
 encfile printf 37
 #
-main 1376 1 __ctype_toupper_loc 2147483647 0 
-main 1376 1 puts 2147483647 0 
-main 1376 1 puts 2147483647 0 
-main 1376 1 puts 2147483647 0 
-main 1376 1 puts 2147483647 0 
-main 1376 1 fopen 2147483647 0 
-main 1376 1 printf 2147483647 0 
-main 1376 1 fopen 2147483647 0 
-main 1376 1 printf 2147483647 0 
-main 1376 1 set_key 184 0 
-main 1376 1 decfile 464 1 fread 2147483647 0 
-main 1376 1 decfile 464 1 printf 2147483647 0 
-main 1376 1 decfile 464 1 fread 2147483647 0 
-main 1376 1 decfile 464 1 printf 2147483647 0 
-main 1376 1 decfile 464 1 decrypt 512 0 
-main 1376 1 decfile 464 1 fread 2147483647 0 
-main 1376 1 decfile 464 1 fwrite 2147483647 0 
-main 1376 1 decfile 464 1 printf 2147483647 0 
-main 1376 1 decfile 464 1 decrypt 512 0 
-main 1376 1 decfile 464 1 fread 2147483647 0 
-main 1376 1 decfile 464 1 fwrite 2147483647 0 
-main 1376 1 decfile 464 1 printf 2147483647 0 
-main 1376 1 set_key 184 0 
-main 1376 1 encfile 240 1 fillrand 8 0 
-main 1376 1 encfile 240 1 fseek 2147483647 0 
-main 1376 1 encfile 240 1 fgetpos 2147483647 0 
-main 1376 1 encfile 240 1 fseek 2147483647 0 
-main 1376 1 encfile 240 1 fwrite 2147483647 0 
-main 1376 1 encfile 240 1 fillrand 8 0 
-main 1376 1 encfile 240 1 feof 2147483647 0 
-main 1376 1 encfile 240 1 fread 2147483647 0 
-main 1376 1 encfile 240 1 encrypt 512 0 
-main 1376 1 encfile 240 1 fwrite 2147483647 0 
-main 1376 1 encfile 240 1 printf 2147483647 0 
-main 1376 1 encfile 240 1 encrypt 512 0 
-main 1376 1 encfile 240 1 fwrite 2147483647 0 
-main 1376 1 encfile 240 1 printf 2147483647 0 
-main 1376 1 fclose 2147483647 0 
-main 1376 1 fclose 2147483647 0 
+main 1392 1 __ctype_toupper_loc 2147483647 0 
+main 1392 1 puts 2147483647 0 
+main 1392 1 puts 2147483647 0 
+main 1392 1 puts 2147483647 0 
+main 1392 1 puts 2147483647 0 
+main 1392 1 fopen 2147483647 0 
+main 1392 1 printf 2147483647 0 
+main 1392 1 fopen 2147483647 0 
+main 1392 1 printf 2147483647 0 
+main 1392 1 set_key 184 0 
+main 1392 1 decfile 464 1 fread 2147483647 0 
+main 1392 1 decfile 464 1 printf 2147483647 0 
+main 1392 1 decfile 464 1 fread 2147483647 0 
+main 1392 1 decfile 464 1 printf 2147483647 0 
+main 1392 1 decfile 464 1 decrypt 512 0 
+main 1392 1 decfile 464 1 fread 2147483647 0 
+main 1392 1 decfile 464 1 fwrite 2147483647 0 
+main 1392 1 decfile 464 1 printf 2147483647 0 
+main 1392 1 decfile 464 1 decrypt 512 0 
+main 1392 1 decfile 464 1 fread 2147483647 0 
+main 1392 1 decfile 464 1 fwrite 2147483647 0 
+main 1392 1 decfile 464 1 printf 2147483647 0 
+main 1392 1 set_key 184 0 
+main 1392 1 encfile 240 1 fillrand 8 0 
+main 1392 1 encfile 240 1 fseek 2147483647 0 
+main 1392 1 encfile 240 1 fgetpos 2147483647 0 
+main 1392 1 encfile 240 1 fseek 2147483647 0 
+main 1392 1 encfile 240 1 fwrite 2147483647 0 
+main 1392 1 encfile 240 1 fillrand 8 0 
+main 1392 1 encfile 240 1 feof 2147483647 0 
+main 1392 1 encfile 240 1 fread 2147483647 0 
+main 1392 1 encfile 240 1 encrypt 512 0 
+main 1392 1 encfile 240 1 fwrite 2147483647 0 
+main 1392 1 encfile 240 1 printf 2147483647 0 
+main 1392 1 encfile 240 1 encrypt 512 0 
+main 1392 1 encfile 240 1 fwrite 2147483647 0 
+main 1392 1 encfile 240 1 printf 2147483647 0 
+main 1392 1 fclose 2147483647 0 
+main 1392 1 fclose 2147483647 0 
 #

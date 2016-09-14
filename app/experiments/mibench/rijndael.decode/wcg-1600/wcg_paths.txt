@@ -1,0 +1,106 @@
+main __ctype_toupper_loc 1
+main puts 2
+main puts 3
+main puts 4
+main puts 5
+main fopen 6
+main printf 7
+main fopen 8
+main printf 9
+main set_key 10
+main decfile 11
+main decfile 12
+main decfile 13
+main decfile 14
+main decfile 15
+main decfile 16
+main decfile 17
+main decfile 18
+main decfile 19
+main decfile 20
+main decfile 21
+main decfile 22
+main set_key 23
+main encfile 24
+main encfile 25
+main encfile 26
+main encfile 27
+main encfile 28
+main encfile 29
+main encfile 30
+main encfile 31
+main encfile 32
+main encfile 33
+main encfile 34
+main encfile 35
+main encfile 36
+main encfile 37
+main fclose 38
+main fclose 39
+decfile fread 11
+decfile printf 12
+decfile fread 13
+decfile printf 14
+decfile decrypt 15
+decfile fread 16
+decfile fwrite 17
+decfile printf 18
+decfile decrypt 19
+decfile fread 20
+decfile fwrite 21
+decfile printf 22
+encfile fillrand 24
+encfile fseek 25
+encfile fgetpos 26
+encfile fseek 27
+encfile fwrite 28
+encfile fillrand 29
+encfile feof 30
+encfile fread 31
+encfile encrypt 32
+encfile fwrite 33
+encfile printf 34
+encfile encrypt 35
+encfile fwrite 36
+encfile printf 37
+#
+main 1192 1 __ctype_toupper_loc 2147483647 0 
+main 1192 1 puts 2147483647 0 
+main 1192 1 puts 2147483647 0 
+main 1192 1 puts 2147483647 0 
+main 1192 1 puts 2147483647 0 
+main 1192 1 fopen 2147483647 0 
+main 1192 1 printf 2147483647 0 
+main 1192 1 fopen 2147483647 0 
+main 1192 1 printf 2147483647 0 
+main 1192 1 set_key 88 0 
+main 1192 1 decfile 200 1 fread 2147483647 0 
+main 1192 1 decfile 200 1 printf 2147483647 0 
+main 1192 1 decfile 200 1 fread 2147483647 0 
+main 1192 1 decfile 200 1 printf 2147483647 0 
+main 1192 1 decfile 200 1 decrypt 200 0 
+main 1192 1 decfile 200 1 fread 2147483647 0 
+main 1192 1 decfile 200 1 fwrite 2147483647 0 
+main 1192 1 decfile 200 1 printf 2147483647 0 
+main 1192 1 decfile 200 1 decrypt 200 0 
+main 1192 1 decfile 200 1 fread 2147483647 0 
+main 1192 1 decfile 200 1 fwrite 2147483647 0 
+main 1192 1 decfile 200 1 printf 2147483647 0 
+main 1192 1 set_key 88 0 
+main 1192 1 encfile 2147483647 1 fillrand 2147483647 0 
+main 1192 1 encfile 2147483647 1 fseek 2147483647 0 
+main 1192 1 encfile 2147483647 1 fgetpos 2147483647 0 
+main 1192 1 encfile 2147483647 1 fseek 2147483647 0 
+main 1192 1 encfile 2147483647 1 fwrite 2147483647 0 
+main 1192 1 encfile 2147483647 1 fillrand 2147483647 0 
+main 1192 1 encfile 2147483647 1 feof 2147483647 0 
+main 1192 1 encfile 2147483647 1 fread 2147483647 0 
+main 1192 1 encfile 2147483647 1 encrypt 2147483647 0 
+main 1192 1 encfile 2147483647 1 fwrite 2147483647 0 
+main 1192 1 encfile 2147483647 1 printf 2147483647 0 
+main 1192 1 encfile 2147483647 1 encrypt 2147483647 0 
+main 1192 1 encfile 2147483647 1 fwrite 2147483647 0 
+main 1192 1 encfile 2147483647 1 printf 2147483647 0 
+main 1192 1 fclose 2147483647 0 
+main 1192 1 fclose 2147483647 0 
+#

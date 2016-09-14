@@ -1,4 +1,3 @@
-dma 8
 sha_init 16
 sha_update 208
 sha_final 80

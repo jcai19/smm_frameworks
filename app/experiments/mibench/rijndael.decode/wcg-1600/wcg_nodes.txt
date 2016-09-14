@@ -1,0 +1,4 @@
+main 1192
+set_key 88
+decfile 200
+decrypt 200

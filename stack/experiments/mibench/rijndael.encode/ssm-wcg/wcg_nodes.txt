@@ -1,8 +1,7 @@
-dma 8
 set_key 184
 encrypt 512
 decrypt 512
 fillrand 8
 encfile 240
 decfile 464
-main 1376
+main 1392

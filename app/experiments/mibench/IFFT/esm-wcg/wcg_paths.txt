@@ -1,0 +1,194 @@
+main puts 1
+main puts 2
+main printf 3
+main puts 4
+main exit 5
+main strncmp 6
+main atoi 7
+main atoi 8
+main srand 9
+main malloc 10
+main malloc 11
+main malloc 12
+main malloc 13
+main malloc 14
+main malloc 15
+main rand 16
+main cos 17
+main sin 18
+main rand 19
+main rand 20
+main fft_float 21
+main fft_float 22
+main fft_float 23
+main fft_float 24
+main fft_float 25
+main fft_float 26
+main fft_float 27
+main fft_float 28
+main fft_float 29
+main fft_float 30
+main fft_float 31
+main fft_float 32
+main fft_float 33
+main fft_float 34
+main fft_float 35
+main fft_float 36
+main fft_float 37
+main fft_float 38
+main puts 39
+main printf 40
+main fft_float 41
+main fft_float 42
+main fft_float 43
+main fft_float 44
+main fft_float 45
+main fft_float 46
+main fft_float 47
+main fft_float 48
+main fft_float 49
+main fft_float 50
+main fft_float 51
+main fft_float 52
+main fft_float 53
+main fft_float 54
+main fft_float 55
+main fft_float 56
+main fft_float 57
+main fft_float 58
+main puts 59
+main putchar 60
+main puts 61
+main printf 62
+main putchar 63
+main free 64
+main free 65
+main free 66
+main free 67
+main free 68
+main free 69
+fft_float printf 21
+fft_float IsPowerOfTwo 22
+fft_float fprintf 23
+fft_float exit 24
+fft_float CheckPointer 25
+fft_float CheckPointer 26
+fft_float CheckPointer 27
+fft_float CheckPointer 28
+fft_float CheckPointer 29
+fft_float CheckPointer 30
+fft_float NumberOfBitsNeeded 31
+fft_float NumberOfBitsNeeded 32
+fft_float ReverseBits 33
+fft_float ReverseBits 34
+fft_float sin 35
+fft_float sin 36
+fft_float cos 37
+fft_float cos 38
+fft_float printf 41
+fft_float IsPowerOfTwo 42
+fft_float fprintf 43
+fft_float exit 44
+fft_float CheckPointer 45
+fft_float CheckPointer 46
+fft_float CheckPointer 47
+fft_float CheckPointer 48
+fft_float CheckPointer 49
+fft_float CheckPointer 50
+fft_float NumberOfBitsNeeded 51
+fft_float NumberOfBitsNeeded 52
+fft_float ReverseBits 53
+fft_float ReverseBits 54
+fft_float sin 55
+fft_float sin 56
+fft_float cos 57
+fft_float cos 58
+IsPowerOfTwo fprintf 22
+IsPowerOfTwo fprintf 42
+CheckPointer fprintf 25
+CheckPointer fprintf 45
+CheckPointer exit 26
+CheckPointer exit 46
+CheckPointer fprintf 27
+CheckPointer fprintf 47
+CheckPointer exit 28
+CheckPointer exit 48
+CheckPointer fprintf 29
+CheckPointer fprintf 49
+CheckPointer exit 30
+CheckPointer exit 50
+NumberOfBitsNeeded fprintf 31
+NumberOfBitsNeeded fprintf 51
+NumberOfBitsNeeded exit 32
+NumberOfBitsNeeded exit 52
+#
+main 480 1 puts 40 0 
+main 480 1 puts 40 0 
+main 480 1 printf 1608 0 
+main 480 1 puts 40 0 
+main 480 1 exit 2147483647 0 
+main 480 1 strncmp 8 0 
+main 480 1 atoi 24 0 
+main 480 1 atoi 24 0 
+main 480 1 srand 2147483647 0 
+main 480 1 malloc 40 0 
+main 480 1 malloc 40 0 
+main 480 1 malloc 40 0 
+main 480 1 malloc 40 0 
+main 480 1 malloc 40 0 
+main 480 1 malloc 40 0 
+main 480 1 rand 24 0 
+main 480 1 cos 2147483647 0 
+main 480 1 sin 2147483647 0 
+main 480 1 rand 24 0 
+main 480 1 rand 24 0 
+main 480 1 fft_float 432 1 printf 1608 0 
+main 480 1 fft_float 432 1 IsPowerOfTwo 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 NumberOfBitsNeeded 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 NumberOfBitsNeeded 32 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 ReverseBits 8 0 
+main 480 1 fft_float 432 1 ReverseBits 8 0 
+main 480 1 fft_float 432 1 sin 2147483647 0 
+main 480 1 fft_float 432 1 sin 2147483647 0 
+main 480 1 fft_float 432 1 cos 2147483647 0 
+main 480 1 fft_float 432 1 cos 2147483647 0 
+main 480 1 puts 40 0 
+main 480 1 printf 1608 0 
+main 480 1 fft_float 432 1 printf 1608 0 
+main 480 1 fft_float 432 1 IsPowerOfTwo 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 CheckPointer 32 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 NumberOfBitsNeeded 32 1 fprintf 2147483647 0 
+main 480 1 fft_float 432 1 NumberOfBitsNeeded 32 1 exit 2147483647 0 
+main 480 1 fft_float 432 1 ReverseBits 8 0 
+main 480 1 fft_float 432 1 ReverseBits 8 0 
+main 480 1 fft_float 432 1 sin 2147483647 0 
+main 480 1 fft_float 432 1 sin 2147483647 0 
+main 480 1 fft_float 432 1 cos 2147483647 0 
+main 480 1 fft_float 432 1 cos 2147483647 0 
+main 480 1 puts 40 0 
+main 480 1 putchar 152 0 
+main 480 1 puts 40 0 
+main 480 1 printf 1608 0 
+main 480 1 putchar 152 0 
+main 480 1 free 88 0 
+main 480 1 free 88 0 
+main 480 1 free 88 0 
+main 480 1 free 88 0 
+main 480 1 free 88 0 
+main 480 1 free 88 0 
+#

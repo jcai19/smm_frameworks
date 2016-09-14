@@ -23,7 +23,6 @@ LIBS = -lm
 
 OBJECTS = ${original_objects}
 OPT_OBJECTS = dma.bc stack_manager.bc ${opt_objects}
-PROF_OBJECTS = dma.bc ${prof_objects}
 CC=clang
 CFLAGS = $(INCLUDEDIRS) $(INCLUDE) -emit-llvm -c -O3 -fno-inline
 LDFLAGS = $(LIBDIRS) $(LIBS) -static
@@ -81,48 +80,42 @@ stack_manager.bc:$(SMMDIR)/stack/lib/stack_manager.c
 opt_%.bc: %${source_file_extension}
 	$(CC) -I$(SMMDIR)/stack/include -include stack_manager.h $(CFLAGS) $< -o $@
 
-prof_%.bc: %${source_file_extension}
-	$(CC) $(CFLAGS) $< -o $@
-
-ssm-prof: $(PROF_OBJECTS)
-	llvm-link -o $@_$(PROGRAM).bc $(PROF_OBJECTS)
-
-	# Print the stack frame sizes of user-defined functions into wcg_nodes.txt 
-	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $@_$(PROGRAM) $@_$(PROGRAM).bc $(LDFLAGS) 2> wcg_nodes.txt
-
-	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $@_$(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
-
-	rm -rf ssm-wcg
-	mkdir ssm-wcg
-	mv wcg_nodes.txt wcg_paths.txt ssm-wcg
-
-esm-prof: $(PROF_OBJECTS)
-	llvm-link -o $@_$(PROGRAM).bc $(PROF_OBJECTS)
-
-	# Print the stack frame sizes of user-defined functions into wcg_nodes.txt 
-	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $@_$(PROGRAM) $@_$(PROGRAM).bc $(LDFLAGS) 2> wcg_nodes.txt
-
-	# Print the names of the library functions into lib_funcs.txt
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-libfunc < $@_$(PROGRAM).bc > /dev/null 2> lib_funcs.txt
-
-    	# Get the trace of function calls after turning on the trace of function calls in Gem5
-	./runme-prof
-	# Get the stack frame sizes of the library functions listed in lib_funcs.txt and add them to wcg_nodes.txt
-	libFuncFrameSize lib_funcs.txt wcg_nodes.txt
-
-	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $@_$(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
-
-	rm -rf esm-wcg
-	mkdir esm-wcg
-	mv wcg_nodes.txt wcg_paths.txt esm-wcg
-
 opt:
 	make ssm-cuts
 	make ssm
 	make esm-cuts
 	make esm
+
+
+ssm-prof: $(OBJECTS)
+	# Print the stack frame sizes of user-defined functions into wcg_nodes.txt 
+	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> wcg_nodes.txt
+
+	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
+
+	rm -rf ssm-wcg
+	mkdir ssm-wcg
+	mv wcg_nodes.txt wcg_paths.txt ssm-wcg
+
+esm-prof: $(OBJECTS)
+    	# The trace of function calls in Gem5 must have ben prepared
+
+	# Print the stack frame sizes of user-defined functions into wcg_nodes.txt 
+	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> wcg_nodes.txt
+
+	# Print the names of the library functions into lib_funcs.txt
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-libfunc < $(PROGRAM).bc > /dev/null 2> lib_funcs.txt
+	# Get the stack frame sizes of the library functions listed in lib_funcs.txt and add them to wcg_nodes.txt
+	libFuncFrameSize lib_funcs.txt wcg_nodes.txt
+
+	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
+
+	rm -rf esm-wcg
+	mkdir esm-wcg
+	mv wcg_nodes.txt wcg_paths.txt esm-wcg
+
 
 callgraph:
 	opt -O3 -disable-inlining -dot-callgraph < basic_$(PROGRAM).bc
@@ -169,18 +162,15 @@ clean:
 		objects = list(set(objects))
 		original_objects = ""
 		opt_objects = ""
-		prof_objects = ""
 	   	for i in range(len(objects)):
 			original_objects = original_objects + objects[i] + ".bc" + " "
 			opt_objects = opt_objects + "opt_" + objects[i] + ".bc" + " "
-			prof_objects = prof_objects + "prof_" + objects[i] + ".bc" + " "
 		# Use the name of current folder as the name of generated executable file
 		program = os.path.basename(cwd)
 		with open('Makefile', 'w') as f:
 			# make + make opt
 			makefile = makefile.replace("${original_objects}", original_objects)
 			makefile = makefile.replace("${opt_objects}", opt_objects)
-			makefile = makefile.replace("${prof_objects}", prof_objects)
 			makefile = makefile.replace("${program}", program)
 			makefile = makefile.replace("${source_file_extension}", source_file_extension)
 			# make clean
@@ -346,18 +336,15 @@ clean:
 		objects = list(set(objects))
 		original_objects = ""
 		opt_objects = ""
-#		prof_objects = ""
 	   	for i in range(len(objects)):
 			original_objects = original_objects + objects[i] + ".bc" + " "
 			opt_objects = opt_objects + "opt_" + objects[i] + ".bc" + " "
-#			prof_objects = prof_objects + "prof_" + objects[i] + ".bc" + " "
 		# Use the name of current folder as the name of generated executable file
 		program = os.path.basename(cwd)
 		with open('Makefile', 'w') as f:
 			# make + make opt
 			makefile = makefile.replace("${original_objects}", original_objects)
 			makefile = makefile.replace("${opt_objects}", opt_objects)
-#			makefile = makefile.replace("${prof_objects}", prof_objects)
 			makefile = makefile.replace("${program}", program)
 			makefile = makefile.replace("${source_file_extension}", source_file_extension)
 			# make clean
@@ -544,28 +531,23 @@ eam: $(OPT_OBJECTS)
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
 	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 
-esm-prof: $(PROF_OBJECTS)
-	llvm-link -o $@_$(PROGRAM).bc $(PROF_OBJECTS)
+esm-prof: $(OBJECTS)
+    	# The trace of function calls in Gem5 must have ben prepared
 
 	# Print the stack frame sizes of user-defined functions into wcg_nodes.txt 
-	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $@_$(PROGRAM) $@_$(PROGRAM).bc $(LDFLAGS) 2> wcg_nodes.txt
+	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> wcg_nodes.txt
 
 	# Print the names of the library functions into lib_funcs.txt
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-libfunc < $@_$(PROGRAM).bc > /dev/null 2> lib_funcs.txt
-
-    	# Get the trace of function calls after turning on the trace of function calls in Gem5
-	./runme-prof
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-libfunc < $(PROGRAM).bc > /dev/null 2> lib_funcs.txt
 	# Get the stack frame sizes of the library functions listed in lib_funcs.txt and add them to wcg_nodes.txt
 	libFuncFrameSize lib_funcs.txt wcg_nodes.txt
 
 	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
-	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $@_$(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
+	opt -O3 -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
 
 	rm -rf esm-wcg
 	mkdir esm-wcg
 	mv wcg_nodes.txt wcg_paths.txt esm-wcg
-
-
 
 dma.bc:$(SMMDIR)/common/lib/dma.c
 	$(CC) -I$(SMMDIR)/common/include -include dma.h $(CFLAGS) $< -o $@
@@ -581,9 +563,8 @@ code_manager.bc:$(SMMDIR)/code/lib/code_manager.c
 
 opt_%.bc: %${source_file_extension}
 	$(CC) -I$(SMMDIR)/stack/include -include stack_manager.h -I$(SMMDIR)/code/include -include code_manager.h $(CFLAGS) $< -o $@
-
 clean:
-	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.gif ${outfile} am_$(PROGRAM) eam_$(PROGRAM) _func_size 
+	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.gif ${outfile} am_$(PROGRAM) eam_$(PROGRAM) lib_funcs.txt
     """
 
 
@@ -602,18 +583,15 @@ clean:
 		objects = list(set(objects))
 		original_objects = ""
 		opt_objects = ""
-#		prof_objects = ""
 	   	for i in range(len(objects)):
 			original_objects = original_objects + objects[i] + ".bc" + " "
 			opt_objects = opt_objects + "opt_" + objects[i] + ".bc" + " "
-#			prof_objects = prof_objects + "prof_" + objects[i] + ".bc" + " "
 		# Use the name of current folder as the name of generated executable file
 		program = os.path.basename(cwd)
 		with open('Makefile', 'w') as f:
 			# make + make opt
 			makefile = makefile.replace("${original_objects}", original_objects)
 			makefile = makefile.replace("${opt_objects}", opt_objects)
-#			makefile = makefile.replace("${prof_objects}", prof_objects)
 			makefile = makefile.replace("${program}", program)
 			makefile = makefile.replace("${source_file_extension}", source_file_extension)
 			# make clean
@@ -633,10 +611,10 @@ clean:
 			else:
 				makefile = makefile.replace("${infile}", "")
 			if (stacksize != 0):
-				makefile = makefile.replace("${stack_size}", "-stack-size " + str(stacksize))
+				makefile = makefile.replace("${stack_size}", str(stacksize))
 			else:
 				makefile = makefile.replace("${stack_size}", "")
-			if (stacksize != 0):
+			if (codesize != 0):
 				makefile = makefile.replace("${code_size}", "-code-size " + str(codesize))
 			else:
 				makefile = makefile.replace("${code_size}", "")
@@ -740,6 +718,20 @@ def create_runme_smmapp(arguments="", infile = "", outfile=""):
 			f.write(am_text + "\n")
 			f.write(eam_text + "\n")
     		subprocess.Popen("chmod 755 runme", stdout=subprocess.PIPE, shell=True)
+
+	if (not os.path.isfile("runme-prof")):
+		with open("runme-prof", "w") as f:
+			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
+			text = "$SIMDIR/build/X86/gem5.opt -q -r -e --stderr-file=simerr -d m5out/smm $SIMDIR/configs/example/se.py --cpu-type=atomic -c " + program
+			if (arguments != ""):
+				text = text + " -o \"" + arguments + "\""
+			if (infile!= ""):
+				text = text + " --input=\"" + infile + "\""
+			if (outfile != ""):
+				text = text + " --output=\"" + outfile + "\""
+			f.write(prolog + "\n")
+			f.write(text + "\n")
+    		subprocess.Popen("chmod 755 runme-prof", stdout=subprocess.PIPE, shell=True)
 
 
 # Create a makefile for a cache-based architecture

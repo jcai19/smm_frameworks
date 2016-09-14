@@ -1,0 +1,11 @@
+rad2deg 8
+deg2rad 8
+usqrt 8
+main 432
+SolveCubic 288
+putchar 152
+cos 8
+pow 184
+sqrt 8
+puts 40
+printf 1608
