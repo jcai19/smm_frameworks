@@ -10,7 +10,7 @@ char *_spm_stack_base, *_mem_stack_base;
 long long int _mem_stack_depth = 0;
 STACK_ENTRY _mem_stack[20];
 
-char buf1[128], buf2[128];
+//char buf1[128], buf2[128];
 
 // pointer management
 char *_stack_pointer;
@@ -65,13 +65,13 @@ char * _g2l(char *gaddr, unsigned long size) {
     if (_mem_stack_depth == 0) {
 	if (gaddr >= _mem_stack_base - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack_base) {
 	    laddr = _spm_stack_base - (_mem_stack_base - gaddr);
-	    dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
+	    //dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
 	    //laddr = buf1;
 	}
     } else {
 	if (gaddr >= _mem_stack[_mem_stack_depth-1].mem_addr - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack[_mem_stack_depth-1].mem_addr) {
 	    laddr = _spm_stack_base - (_mem_stack[_mem_stack_depth-1].mem_addr - gaddr);
-	    dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
+	    //dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
 	    //laddr = buf1;
 	}
     }
@@ -79,6 +79,7 @@ char * _g2l(char *gaddr, unsigned long size) {
     return laddr;
 }
 
+/*
 void _ptr_wr(char *gaddr, unsigned long size) {
     if (_mem_stack_depth == 0) {
 	if (gaddr >= _mem_stack_base - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack_base) {
@@ -94,3 +95,4 @@ void _ptr_wr(char *gaddr, unsigned long size) {
 	} 
     }
 }
+*/
