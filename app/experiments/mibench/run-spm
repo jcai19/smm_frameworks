@@ -7,17 +7,22 @@ directories = []
 for path in os.listdir(cwd):
 	if os.path.isdir(path):
 		directories.append(path)
-#directories = [ 'stringsearch', 'sha','rijndael', 'susan']
+#directories = [ 'rijndael.encode', 'rijndael.decode']
 #directories.remove('patricia')
 print directories
 
 for directory in directories:
 	os.chdir(directory)
     	print directory
-	command = "./configure-spm-min; make clean; make; make overlay; make esm-cuts; make eam; ./runme; mkdir m5out/spm/min; mv m5out/spm/smm* m5out/spm/min;"
-	subprocess.call(command, shell=True)
-	command = "./configure-spm-mid; make clean; make; make overlay; make esm-cuts; make eam; ./runme; mkdir m5out/spm/mid; mv m5out/spm/smm* m5out/spm/mid;"
-	subprocess.call(command, shell=True)
-	command = "./configure-spm-max; make clean; make; make overlay; make esm-cuts; make eam; ./runme; mkdir m5out/spm/max; mv m5out/spm/smm* m5out/spm/max;"
+	#command = "./configure-spm-min; make clean; make; make am; make eam; ./runme; mkdir m5out/spm/min; mv m5out/spm/smm* m5out/spm/min;"
+	#command = "./configure-spm-min; make clean; make; make eam; ./runme; mkdir m5out/spm/min; mv m5out/spm/smm* m5out/spm/min;"
+	#subprocess.call(command, shell=True)
+	#command = "./configure-spm-mid; make clean; make; make am; make eam; ./runme; mkdir m5out/spm/mid; mv m5out/spm/smm* m5out/spm/mid;"
+	#command = "./configure-spm-mid; make clean; make; make eam; ./runme; mkdir m5out/spm/mid; mv m5out/spm/smm* m5out/spm/mid;"
+	#subprocess.call(command, shell=True)
+	#command = "./configure-spm-max; make clean; make; make am; make eam; ./runme; mkdir m5out/spm/max; mv m5out/spm/smm* m5out/spm/max;"
+	#command = "./configure-spm-max; make clean; make; make eam; ./runme; mkdir m5out/spm/max; mv m5out/spm/smm* m5out/spm/max;"
+	#subprocess.call(command, shell=True)
+	command = "./configure-spm; make clean; make; make eam; ./am_runme;"
 	subprocess.call(command, shell=True)
 	os.chdir(cwd)

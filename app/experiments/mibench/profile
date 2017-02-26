@@ -34,10 +34,10 @@ for prog, options in argv.iteritems():
 	subprocess.call(command, shell=True)
 	command = "make -s"
 	subprocess.call(command, shell=True)
-	command = "make -s ssm-prof"
+	command = "make -s ssm-profile"
 	subprocess.call(command, shell=True)
 	command = "./runme-prof"
 	subprocess.call(command, shell=True)
-	command = "make -s esm-prof"
+	command = "make -s esm-profile"
 	subprocess.call(command, shell=True)
 	os.chdir(cwd)

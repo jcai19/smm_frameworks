@@ -4,66 +4,150 @@ import math
 import os
 import subprocess
 
-argv = {
-    "adpcm.decode" : "--input data/small.adpcm --output output_small.pcm", 
-    "adpcm.encode" : "--input data/small.pcm --output output_small.adpcm",
-    "basicmath" : "--output output_small.txt",
-    "CRC32" : "--args data/small.pcm --output output_small.txt",
-    "dijkstra" : "--args input.dat --output output_small.dat",
-    "patricia" : "--args small.udp --output output_small.txt",
-    "FFT" : "--args \"4 4096\" --output output_small.txt",
-    "IFFT" : "--args \"4 8192 -i\" --output output_small.inv.txt",
-    "rijndael.decode": "--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
-    "rijndael.encode": "--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
-    "sha": "--args \"input_small.asc\" --output output_small.txt",
-    "stringsearch": "--output output_small.txt",
-    "susan.corners" : "--args \"input_small.pgm output_small.corners.pgm -c\"",
-    "susan.edges": "--args \"input_small.pgm output_small.edges.pgm -e\"",
-    "susan.smoothing": "--args \"input_small.pgm output_small.smoothing.pgm -s\"",
-}
+import getopt
+import sys
 
-cwd = os.getcwd()
-for prog, options in argv.iteritems():
-	if not os.path.isdir(prog):
-		print prog, "does not exist"
-		continue
-	print prog
-	os.chdir(prog)
-	#print "\t", options
-	f = open('esm-wcg/wcg_nodes.txt', 'r')
-	minStackSize = 0
-	midStackSize = 0
-	maxStackSize = 0
-	for line in f:
-		funcName, stackFrameSizeStr = line.split()
-		stackFrameSize = long(stackFrameSizeStr)
-		if stackFrameSize > minStackSize:
-			minStackSize = stackFrameSize
-		maxStackSize += stackFrameSize
-	f.close()
-	midStackSize = (minStackSize + maxStackSize) / 2
-	cacheSize = long(pow(2, math.ceil(math.log(midStackSize, 2))))
 
-	f = open('configure-spm-min', 'w')
-	command = "smmmake --clean; smmmake --configure-app " + options + " --stack-size " + str(minStackSize) + " --num-regions 2"
-	print "\t", command
-	f.write(command)
-    	f.close()
+def GLB(num):
+    return long(pow(2, math.floor(math.log(num, 2))))
 
-	f = open('configure-spm-mid', 'w')
-	command = "smmmake --clean; smmmake --configure-app " + options + " --stack-size " + str(midStackSize) + " --num-regions 2"
-	print "\t", command
-	f.write(command)
-    	f.close()
+def LGB(num):
+    return long(pow(2, math.ceil(math.log(num, 2))))
 
-	f = open('configure-spm-max', 'w')
-	command = "smmmake --clean; smmmake --configure-app " + options + " --stack-size " + str(maxStackSize) + " --num-regions 2"
-	print "\t", command
-	f.write(command)
-    	f.close()
+    
+def configure(dsize, tile):
 
-	command = "chmod +x configure-spm-min; chmod +x configure-spm-mid; chmod +x configure-spm-max;"
-	subprocess.call(command, shell=True)
+	argv = {
+    		"adpcm.decode":("--input data/small.adpcm --output output_small.pcm",2), 
+		"adpcm.encode":("--input data/small.pcm --output output_small.adpcm", 2),
+		"basicmath":("--output output_small.txt",3),
+		"CRC32" : ("--args data/small.pcm --output output_small.txt",2),
+		"dijkstra":("--args input.dat --output output_small.dat",6),
+		"FFT":("--args \"4 4096\" --output output_small.txt", 6),
+		"IFFT":("--args \"4 8192 -i\" --output output_small.inv.txt", 6),
+		"patricia" : ("--args small.udp --output output_small.txt",5),
+		"rijndael.decode": ("--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"", 4),
+		"rijndael.encode": ("--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"", 5),
+		"sha": ("--args \"input_small.asc\" --output output_small.txt", 8),
+		"stringsearch": ("--output output_small.txt", 3),
+		"susan.corners" : ("--args \"input_small.pgm output_small.corners.pgm -c\"",19),
+		"susan.edges": ("--args \"input_small.pgm output_small.edges.pgm -e\"",19),
+		"susan.smoothing": ("--args \"input_small.pgm output_small.smoothing.pgm -s\"",19),
+	}
 
-    	os.chdir(cwd)
-    	
+	cwd = os.getcwd()
+	for prog, pair in argv.iteritems():
+		if not os.path.isdir(prog):
+			print prog, "does not exist"
+			continue
+		print prog
+		os.chdir(prog)
+
+		options = pair[0]
+
+		# Find parameters for stack management
+		#print "\t", options
+		f = open('esm-wcg/wcg_nodes.txt', 'r')
+		minStackSize = 0
+		midStackSize = 0
+		maxStackSize = 0
+		for line in f:
+			funcName, stackFrameSizeStr = line.split()
+			stackFrameSize = long(stackFrameSizeStr)
+			if stackFrameSize > minStackSize:
+				minStackSize = stackFrameSize
+			maxStackSize += stackFrameSize
+		f.close()
+		midStackSize = (minStackSize + maxStackSize) / 2
+		stackSpmSize = midStackSize
+		# For array
+		#stackSpmSize = 0
+
+		numFuncs = pair[1]
+	    	numRegions = long(math.ceil(float(numFuncs)/2))+1
+		#tile = 32
+
+		command = "smmmake --configure-spm --num-region " + str(numRegions) + " --tile " + str(tile) + ";"
+		subprocess.call(command, shell=True)
+		command = "make -s;"
+		subprocess.call(command, shell=True)
+		# Find parameters for code management
+		command = "make -s mapping.txt;"
+		subprocess.call(command, shell=True)
+		f = open('size_regions.txt', 'r')
+		codeSpmSize = long(f.readline().split()[1])
+
+		# Find parameters for array management
+		command = "make -s evm;"
+		subprocess.call(command, shell=True)
+		f = open('array_spm_size.txt', 'r')
+		arraySpmSize = long(f.readline().split()[1])
+
+		command = "make clean; smmmake --clean;"
+		subprocess.call(command, shell=True)
+
+
+
+		# configure caches
+		#dsize = 32*1024
+
+		f = open('configure-cache', 'w')
+		#command = "smmmake --clean; smmmake --configure-cache " + options + " --l1d_size " + str(LGB(dsize+stackSpmSize+arraySpmSize)) + "B --l1i_size " + str(LGB(codeSpmSize)) + "B"
+		command = "smmmake --clean; smmmake --configure-cache " + options + " --l1d_size " + str(LGB(dsize)) + "B --l1i_size " + str(LGB(codeSpmSize)) + "B"
+		#print "\t", command
+		f.write(command)
+    		f.close()
+
+	    	f = open('temp', 'w')
+		f.write(str(stackSpmSize+arraySpmSize));
+		f.close
+
+		# configure SPM
+		#f = open('configure-spm-min', 'w')
+		#command = "smmmake --clean; smmmake --configure-spm " + options + " --stack-size " + str(minStackSize) + " --num-regions " + str(numRegions) + " --tile " + str(tile)
+		#print "\t", command
+		#f.write(command)
+		#f.close()
+
+		#f = open('configure-spm-mid', 'w')
+		#command = "smmmake --clean; smmmake --configure-spm " + options + " --stack-size " + str(midStackSize) + " --num-regions " + str(numRegions) + " --tile " + str(tile)
+		#print "\t", command
+		#f.write(command)
+		#f.close()
+
+		#f = open('configure-spm-max', 'w')
+		#command = "smmmake --clean; smmmake --configure-spm " + options + " --stack-size " + str(maxStackSize) + " --num-regions " + str(numRegions) + " --tile " + str(tile)
+		#print "\t", command
+		#f.write(command)
+		#f.close()
+
+		f = open('configure-spm', 'w')
+		command = "smmmake --clean; smmmake --configure-spm " + options + " --stack-size " + str(stackSpmSize) + " --tile " + str(tile) + " --num-regions " + str(numRegions) + " --l1d_size "+str(LGB(dsize))+"B"
+		print "\t", command
+		f.write(command)
+	    	f.close()
+
+		#command = "chmod +x configure-spm-min; chmod +x configure-spm-mid; chmod +x configure-spm-max; chmod +x configure-spm; chmod +x configure-cache;"
+		command = "chmod +x configure-spm*; chmod +x configure-cache;"
+		subprocess.call(command, shell=True)
+
+	    	os.chdir(cwd)
+
+# Get options
+if __name__ == "__main__":
+	try:
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["dsize=", "tile-size="]) 
+	except getopt.GetoptError as err:
+		print str(err)
+		sys.exit(2)
+	dsize = 32 * 1024
+	tile_size = 32
+	for opt, arg in opts:
+		if opt in ("-h", "--help"):
+			print '--dsize --tile_size'
+			sys.exit()
+		elif opt in ("--dsize"):
+			dsize = arg
+		elif opt in ("--tile-size"):
+			tile_size = arg
+	configure(dsize, tile_size)

@@ -232,7 +232,9 @@ int decfile(FILE *fin, FILE *fout, aes *ctx, char* ifn, char* ofn)
 }
 
 int main(int argc, char *argv[])
-{   FILE    *fin = 0, *fout = 0;
+{   
+    printf("test\n");
+    FILE    *fin = 0, *fout = 0;
     char    *cp, ch, key[32];
     int     i=0, by=0, key_len=0, err = 0;
     aes     ctx[1];
