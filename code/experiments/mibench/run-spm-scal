@@ -15,6 +15,24 @@ argv = {
     "stringsearch": ("--output output_small.txt", 3)
 }
 
+out = {
+    "adpcm.decode" : "output_small.pcm", 
+    "adpcm.encode" : "output_small.adpcm",
+    "basicmath" : "output_small.txt",
+    "CRC32" : "output_small.txt",
+    "dijkstra" : "output_small.dat",
+    "patricia" : "output_small.txt",
+    "FFT" : "output_small.txt",
+    "IFFT" : "output_small.inv.txt",
+    "rijndael.decode": "output_small.dec",
+    "rijndael.encode": "output_small.enc",
+    "sha": "output_small.txt",
+    "stringsearch": "output_small.txt",
+    "susan.corners" : "output_small.corners.pgm",
+    "susan.edges": "output_small.edges.pgm",
+    "susan.smoothing": "output_small.smoothing.pgm",
+}
+
 cwd = os.getcwd()
 for prog,pair in argv.iteritems():
 	if not os.path.isdir(prog):
@@ -30,6 +48,7 @@ for prog,pair in argv.iteritems():
 	for i in range(2, numFuncs+1):
     		str_i = str(i);
 		command = command + "make clean; smmmake --clean; smmmake --configure-code "+option+" --num-regions "+str_i+"; make; make overlay; make cm; make ecm; ./runme; mkdir m5out/spm/"+str_i+"; mv m5out/spm/smm* m5out/spm/"+str_i+"; ";
+		#command = command + "make clean; smmmake --clean; smmmake --configure-code "+option+" --num-regions "+str_i+"; make; make cm; make ecm; ./runme; mkdir m5out/spm/"+str_i+"; mv m5out/spm/smm* m5out/spm/"+str_i+"; mv "+out[prog]+" " + str_i+"_"+out[prog]+"; mv cm_"+out[prog]+" " + str_i+"_cm_"+out[prog]+"; mv ecm_"+out[prog]+" " + str_i+"_ecm_"+out[prog]+";"
 		
 #	print command
 	subprocess.call(command, shell=True)
