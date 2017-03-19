@@ -23,6 +23,9 @@ argv = {
 
 
 cwd = os.getcwd()
+work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+os.chdir(work_dir)
+
 for prog, options in argv.iteritems():
 	if not os.path.isdir(prog):
 		print prog, "does not exist"
@@ -34,10 +37,13 @@ for prog, options in argv.iteritems():
 	subprocess.call(command, shell=True)
 	command = "make -s"
 	subprocess.call(command, shell=True)
-	command = "make -s ssm-profile"
-	subprocess.call(command, shell=True)
-	command = "./runme-prof"
-	subprocess.call(command, shell=True)
+	#command = "make -s ssm-profile"
+	#subprocess.call(command, shell=True)
+	#command = "./runme-prof"
+	#subprocess.call(command, shell=True)
 	command = "make -s esm-profile"
 	subprocess.call(command, shell=True)
-	os.chdir(cwd)
+	command = "make clean; smmmake --clean"
+	subprocess.call(command, shell=True)
+	os.chdir(work_dir)
+os.chdir(cwd)		

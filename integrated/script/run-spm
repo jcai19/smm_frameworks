@@ -1,0 +1,39 @@
+#! /usr/bin/env python
+import getopt
+import os
+import subprocess
+import sys
+
+
+config = 1
+try:
+	opts, args = getopt.getopt(sys.argv[1:], "-h", ["data"]) 
+except getopt.GetoptError as err:
+	print str(err)
+	sys.exit(2)
+for opt, arg in opts:
+	if opt in ("--data"):
+		config = 2;
+cwd = os.getcwd()
+work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+os.chdir(work_dir)
+
+directories = []
+for path in os.listdir(work_dir):
+	if os.path.isdir(path):
+		directories.append(path)
+#directories = [ 'rijndael.encode']
+#directories.remove('script')
+#print directories
+
+
+for directory in directories:
+	os.chdir(directory)
+   	print directory
+	if config == 1:
+		command = "./configure-spm; make clean; make; make eim; ./runme; ./runme_im;"
+	elif config == 2:
+		command = "./configure-spm; make clean; make; make edm; ./runme; ./runme_dm;"
+	subprocess.call(command, shell=True)
+	os.chdir(work_dir)
+os.chdir (cwd)

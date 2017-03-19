@@ -2,18 +2,22 @@
 import os
 import subprocess
 
-cwd = os.getcwd()
+cwd = os.getcwd();
+work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+os.chdir(work_dir)
+
 directories = []
-for path in os.listdir(cwd):
+for path in os.listdir(work_dir):
 	if os.path.isdir(path):
 		directories.append(path)
-#directories = [ 'stringsearch', 'sha','rijndael', 'susan']
-#directories.remove('patricia')
-print directories
+#directories = [ 'rijndael.encode']
+#directories.remove('script')
 
 for directory in directories:
 	os.chdir(directory)
     	print directory
 	command = "./configure-cache; make clean; make; ./runme;"
 	subprocess.call(command, shell=True)
-	os.chdir(cwd)
+	os.chdir(work_dir)
+
+os.chdir(cwd)

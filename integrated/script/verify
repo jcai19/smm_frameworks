@@ -11,18 +11,21 @@ argv = {
     "CRC32" : "output_small.txt",
     "dijkstra" : "output_small.dat",
     "patricia" : "output_small.txt",
-    "FFT" : "output_small.txt",
-    "IFFT" : "output_small.inv.txt",
+#    "FFT" : "output_small.txt",
+#    "IFFT" : "output_small.inv.txt",
     "rijndael.decode": "output_small.dec",
     "rijndael.encode": "output_small.enc",
     "sha": "output_small.txt",
     "stringsearch": "output_small.txt",
     "susan.corners" : "output_small.corners.pgm",
     "susan.edges": "output_small.edges.pgm",
-    "susan.smoothing": "output_small.smoothing.pgm",
+#   "susan.smoothing": "output_small.smoothing.pgm",
 }
 
 cwd = os.getcwd()
+work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+os.chdir(work_dir)
+
 for prog, output in argv.iteritems():
 	if not os.path.isdir(prog):
 		#print prog, "does not exist"
@@ -30,13 +33,13 @@ for prog, output in argv.iteritems():
 	print prog
 	os.chdir(prog)
 
-	command = "diff " + output + " am_" + output
+	#command = "diff " + output + " am_" + output
+	#print "\t", command
+	#subprocess.call(command, shell=True)
+
+	command = "diff " + output + " eim_" + output
 	print "\t", command
 	subprocess.call(command, shell=True)
 
-	command = "diff " + output + " eam_" + output
-	print "\t", command
-	subprocess.call(command, shell=True)
-
-    	os.chdir(cwd)
-    	
+    	os.chdir(work_dir)
+os.chdir(cwd)

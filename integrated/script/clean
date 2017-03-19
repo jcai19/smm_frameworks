@@ -3,15 +3,21 @@ import os
 import subprocess
 
 cwd = os.getcwd()
+work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+print work_dir 
+os.chdir(work_dir)
+
 directories = []
-for path in os.listdir(cwd):
+for path in os.listdir(work_dir):
 	if os.path.isdir(path):
 		directories.append(path)
+print directories
 for directory in directories:
 	os.chdir(directory)
 	print directory
 	#command = "make clean; smmmake --clean; rm -r m5out; rm -r configure-*;"
 	#command = "make clean; smmmake --clean; rm -r m5out;"
-	command = "make clean; smmmake --clean; rm temp"
+	command = "make clean; smmmake --clean; rm spm_data_size.txt"
 	subprocess.call(command, shell=True)
-	os.chdir(cwd)
+	os.chdir(work_dir)
+os.chdir(cwd)

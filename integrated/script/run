@@ -1,0 +1,59 @@
+#! /usr/bin/env python
+import getopt
+import math
+import os
+import subprocess
+import sys
+
+
+def run():
+	tile_size = 128
+	min_dsize = 4 * 1024
+	max_dsize = 128 * 1024
+
+	dsize = min_dsize
+	while dsize <=  max_dsize:
+		for i in range(2, 3): 
+		    for j in range(2, 3): 
+			command = "./configure --dcache-size " + str(dsize) + " --tile-size " + str(tile_size) + " --stack-size-scale " + str(float(i)/4) + " --code-size-scale " + str(float(j)/4)
+			subprocess.call(command, shell=True)
+			command = "./run-cache; ./clean; ./run-spm"
+			subprocess.call(command, shell=True)
+			command = "./tabulate --output experiment_s" + str(float(i)/4) + "_c" + str(float(j)/4) + ".xlsx"
+			subprocess.call(command, shell=True)
+			dir_name = str(dsize/1024) + "KB"
+		command = "rm -rf " + dir_name + "; mkdir " + dir_name + "; mv experiment_* " +  dir_name
+		subprocess.call(command, shell=True)
+		dsize = dsize * 2
+
+def run_data():
+	tile_size = 128
+	min_dsize = 2 * 1024
+	max_dsize = 64 * 1024
+	dsize = min_dsize
+
+	while dsize <=  max_dsize:
+		command = "./configure --dcache-size " + str(dsize) + " --tile-size " + str(tile_size) + " --data"
+		subprocess.call(command, shell=True)
+		command = "./run-cache; ./clean; ./run-spm --data"
+		subprocess.call(command, shell=True)
+		command = "./tabulate --output experiments_" + str(dsize) + "B.xlsx --data"
+		subprocess.call(command, shell=True)
+		dsize = dsize * 2	 
+	subprocess.call(command, shell=True)
+
+
+try:
+	opts, args = getopt.getopt(sys.argv[1:], "-h", ["data"]) 
+except getopt.GetoptError as err:
+	print str(err)
+	sys.exit(2)
+config = 1
+
+for opt, arg in opts:
+   	if opt in ("--data"):
+		config = 2
+if config == 1:
+	run()
+elif config == 2:
+    	run_data()
