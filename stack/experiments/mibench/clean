@@ -10,6 +10,6 @@ for path in os.listdir(cwd):
 for directory in directories:
 	os.chdir(directory)
 	print directory
-	command = "make clean; smmmake --clean; rm -r m5out;"
+	command = "make clean; smmmake --clean; rm -r m5out; rm configure-*"
 	subprocess.call(command, shell=True)
 	os.chdir(cwd)

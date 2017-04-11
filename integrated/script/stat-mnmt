@@ -1,0 +1,226 @@
+#! /usr/bin/env python
+import getopt
+import openpyxl 
+import os
+import subprocess
+import sys
+
+
+
+def getMnmtStats(prog, ws, r):
+	#assert (numFuncs >= 2)
+    	c = ord('A')
+    	ws[chr(c)+str(r)] = prog
+	c = c+1
+
+	# collect statistics of cache-based execution
+	path = "m5out/cache"
+
+	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	if len(tempList) == 0:
+    		return
+	numInsts = float(tempList[1])
+    	ws[chr(c)+str(r)] = numInsts
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	numDcacheMisses = 0
+	if output != "":
+		tempList = output.split()
+		numDcacheMisses = float(tempList[1])
+    	ws[chr(c)+str(r)] = numDcacheMisses
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.icache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	numIcacheMisses = 0
+	if output != "":
+		tempList = output.split()
+		numIcacheMisses = float(tempList[1])
+    	ws[chr(c)+str(r)] = numIcacheMisses
+	c = c+1
+
+	cacheExecTime = numInsts + (numDcacheMisses + numIcacheMisses) * startupCost
+    	ws[chr(c)+str(r)] = cacheExecTime
+	c = c+1
+
+	# collect statistics of SPM-based execution
+	path = "m5out/spm/smmeim"
+
+	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	if len(tempList) == 0:
+    		return
+	numInsts = float(tempList[1])
+    	ws[chr(c)+str(r)] = numInsts
+	c = c+1
+
+	# Use the number from caching if the memory configuration opts to use data cache
+	output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	#numDcacheMisses = 0
+	if output != "":
+		tempList = output.split()
+		numDcacheMisses = float(tempList[1])
+    	ws[chr(c)+str(r)] = numDcacheMisses
+	c = c+1
+
+
+	output = subprocess.Popen("grep num_dmacalls "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	numDMAs = float(tempList[1])
+    	ws[chr(c)+str(r)] = numDMAs
+	c = c+1
+
+	output = subprocess.Popen("grep bytes_transferred_dma "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	DMASize = float(tempList[1])
+    	ws[chr(c)+str(r)] = DMASize
+	c = c+1
+
+	spmExecTime = numInsts + numDMAs*startupCost + DMASize*transferTimePerByte + (numDcacheMisses)*startupCost
+    	ws[chr(c)+str(r)] = spmExecTime
+	c = c+1
+
+	ws[chr(c)+str(r)] = float(spmExecTime)/float(cacheExecTime)
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_sstore "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_sload "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_l2g "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+	output = subprocess.Popen("grep system.cpu.num_func_calls_g2l "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_ptr_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_cget "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_ccall "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+startupCost = 291
+transferTimePerByte = 0.24
+
+progInput = [
+	("adpcm.decode",2), 
+	("adpcm.encode",2),
+	#("basicmath",3),
+	("CRC32", 2),
+	("dijkstra",6),
+	("FFT",6),
+	("IFFT",6),
+	("patricia",5),
+	("rijndael.decode",4),
+	("rijndael.encode",5),
+	("sha",8),
+	("stringsearch",3),
+	("susan.corners", 19),
+	("susan.edges", 19),
+	("susan.smoothing", 19),
+]
+
+
+# Get options
+if __name__ == "__main__":
+
+	config = "integrated"
+    	output = "experiments.xlsx"
+
+	try:
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["output=", "global"]) 
+	except getopt.GetoptError as err:
+		print str(err)
+		sys.exit(2)
+	for opt, arg in opts:
+		if opt in ("--output"):
+			output = arg
+		elif opt in ("--global"):
+			config = "global";
+
+
+
+	wb = openpyxl.Workbook()
+	ws1 = wb.active
+	ws1.title = "SPM vs Cache"
+	
+	c = ord('A')
+	r = 2
+	ws1[chr(c)+str(r)] = "benchmark"
+	c = c+1
+	ws1[chr(c)+'1'] = "cache-based statistics" 
+	ws1[chr(c)+str(r)] = "#insts"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#dmisses"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#imisses"
+	c = c+1
+	ws1[chr(c)+str(r)] = "time"
+	c = c+1
+	ws1[chr(c)+'1'] = "spm-based statistics"
+	ws1[chr(c)+str(r)] = "#insts"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#dmisses"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#dma"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#bytes"
+	c = c+1
+	ws1[chr(c)+str(r)] = "time"
+	c = c+1
+	ws1[chr(c)+str(r)] = "normalized time"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#sstore"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#sload"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#l2g"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#g2l"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#ptr_wr"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#cget"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#ccall"
+	c = c+1
+
+	cwd = os.getcwd()
+	work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+	os.chdir(work_dir)
+  
+	r = 3
+	for prog,numFuncs in progInput:
+		print prog
+		os.chdir(prog)
+	#	command = ""
+	#	print "\t", numFuncs
+		getMnmtStats(prog, ws1,r)
+	#	print command
+	#	subprocess.call(command, shell=True)
+		r = r+1
+	    	os.chdir(work_dir)
+	os.chdir(cwd)
+	wb.save(output)
+
+

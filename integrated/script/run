@@ -7,22 +7,13 @@ import sys
 
 
 def run():
-	tile_size = 128
-	min_dsize = 4 * 1024
-	max_dsize = 128 * 1024
 
-	dsize = min_dsize
-	while dsize <=  max_dsize:
-		for i in range(2, 3): 
-		    for j in range(2, 3): 
-			command = "./configure --dcache-size " + str(dsize) + " --tile-size " + str(tile_size) + " --stack-size-scale " + str(float(i)/4) + " --code-size-scale " + str(float(j)/4)
-			subprocess.call(command, shell=True)
-			command = "./run-cache; ./clean; ./run-spm"
-			subprocess.call(command, shell=True)
-			command = "./tabulate --output experiment_s" + str(float(i)/4) + "_c" + str(float(j)/4) + ".xlsx"
-			subprocess.call(command, shell=True)
-			dir_name = str(dsize/1024) + "KB"
-		command = "rm -rf " + dir_name + "; mkdir " + dir_name + "; mv experiment_* " +  dir_name
+	for ratio in range[0, 1, 0.25]
+		command = "./configure --dcache-size " + str(dsize) + " --tile-size " + str(tile_size) + " --ratio " + str(ratio)
+		subprocess.call(command, shell=True)
+		command = "./run-cache; ./clean; ./run-spm"
+		subprocess.call(command, shell=True)
+		command = "./tabulate --output experiment_" + str(dsize) + "B.xlsx"
 		subprocess.call(command, shell=True)
 		dsize = dsize * 2
 

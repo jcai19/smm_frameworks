@@ -5,15 +5,20 @@ import subprocess
 import sys
 
 
-config = 1
+config = "spm"
 try:
-	opts, args = getopt.getopt(sys.argv[1:], "-h", ["data"]) 
+	opts, args = getopt.getopt(sys.argv[1:], "-h", ["data", "stack", "code"]) 
 except getopt.GetoptError as err:
 	print str(err)
 	sys.exit(2)
 for opt, arg in opts:
+	print opt
 	if opt in ("--data"):
-		config = 2;
+		config = "data"
+	elif opt in ("--stack"):
+		config = "stack"
+	elif opt in ("--code"):
+		config = "code"
 cwd = os.getcwd()
 work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
 os.chdir(work_dir)
@@ -30,10 +35,14 @@ for path in os.listdir(work_dir):
 for directory in directories:
 	os.chdir(directory)
    	print directory
-	if config == 1:
+	if config == "spm":
 		command = "./configure-spm; make clean; make; make eim; ./runme; ./runme_im;"
-	elif config == 2:
+	elif config == "data":
 		command = "./configure-spm; make clean; make; make edm; ./runme; ./runme_dm;"
+	elif config == "stack":
+		command = "./configure-spm; make clean; make; make ssm; make esm; ./runme; ./runme_sm;"
+	elif config == "code":
+		command = "./configure-spm; make clean; make; make ecm; ./runme; ./runme_cm;"
 	subprocess.call(command, shell=True)
 	os.chdir(work_dir)
 os.chdir (cwd)

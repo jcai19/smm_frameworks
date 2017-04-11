@@ -10,7 +10,7 @@ import sys
 
 
 # Create the makefile for SPM management
-def create_makefile_spm(arguments="", infile = "", outfile="", stacksize = 0, datasize = 0, tilesize = 0, codesize = 0, numregions = 0):
+def create_makefile_spm(arguments="", infile = "", outfile="", codesize = 0, numregions = 0, datasize = 0, stacksize = 0, globalsize = 0, memconfig = 0):
 	#  make file
 	#print stacksize
 	makefile = """
@@ -41,121 +41,107 @@ $(PROGRAM): $(OBJECTS)
 	-rm temp_$@.bc
 
 basic_$(PROGRAM).bc: $(PROGRAM)
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMBase.so -smm-prolog < $(PROGRAM).bc > basic_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-prolog < $(PROGRAM).bc > basic_$(PROGRAM).bc
 	llvm-dis < basic_$(PROGRAM).bc > basic_$(PROGRAM).ll
-	-rm temp*_$(PROGRAM).bc
-
-# For stack management
-
-sm: basic_$(PROGRAM).bc dma.bc stack_manager.bc
-	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSM.so -smmsm --debug-only=smmssm < temp_$(PROGRAM).bc > $@_$(PROGRAM).bc
-	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
-	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
-	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
-	-rm temp*_$(PROGRAM).bc
-
-
-ssm-profile: $(PROGRAM) 
-	# Print the stack frame sizes of user-defined functions into wcg_nodes.txt 
-	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> wcg_nodes.txt
-
-	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
-	opt $(OPTLVL) -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
-
-	# Estimate the stack space  (optional)
-	opt $(OPTLVL) -disable-inlining -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-sse < $(PROGRAM).bc > /dev/null 2> wcg_ssize.txt
-
-	rm -rf ssm-wcg
-	mkdir ssm-wcg
-	mv wcg_nodes.txt wcg_paths.txt wcg_ssize.txt ssm-wcg
-
-ssm_wcg_cuts.txt:
-	ssdm-cuts ssm-wcg/wcg_paths.txt ${stack_size} > ssm_wcg_cuts.txt
-
-ssm: basic_$(PROGRAM).bc dma.bc stack_manager.bc ssm-wcg_cuts.txt 
-	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmssm -call-stack-partition ssm_wcg_cuts.txt --debug-only=smmssm < temp_$(PROGRAM).bc > $@_$(PROGRAM).bc
-	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
-	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
-	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
-	-rm temp*_$(PROGRAM).bc
-
-
-esm-profile: $(PROGRAM)
-    	# The trace of function calls in Gem5 must have ben prepared
-
-	# Print the stack frame sizes of user-defined functions into wcg_nodes.txt 
-	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> stack_frame_sizes.txt
-
-	# Print the names of the library functions into lib_funcs.txt
-	#opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-libfunc < $(PROGRAM).bc > /dev/null 2> lib_funcs.txt
-	# Get the stack frame sizes of the library functions listed in lib_funcs.txt and add them to stack_frame_sizes.txt
-	#libFuncFrameSize lib_funcs.txt stack_frame_sizes.txt
-
-	# Get the call paths and save the result in wcg_paths.txt, based on wcg_nodes.txt
-	#opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmsm-wcg < $(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
-
-	-rm -rf esm
-	mkdir esm
-	mv stack_frame_sizes.txt esm
-	#-rm lib_funcs.txt
-
-esm: basic_$(PROGRAM).bc dma.bc stack_manager.bc esm-wcg_cuts.txt spm_heap_allocator.bc
-	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
-	#opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm -call-stack-partition esm-wcg_cuts.txt --debug-only=smmesm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm -spm-stack-size ${spm_stack_size} -stack-frame-size stack_frame_size.txt --debug-only=smmesm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	llvm-link -o temp2_$(PROGRAM).bc heap_allocator.bc temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMBase.so -smm-epilog --debug-only=smm < temp2_$(PROGRAM).bc > $@_$(PROGRAM).bc
-	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
-	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
-	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 	-rm temp*_$(PROGRAM).bc
 
 # For code management 
 
-cm-profile: $(PROGRAM)
+function_size.txt: $(PROGRAM)
 	# Get user functions names
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-funcname < $(PROGRAM).bc > /dev/null 2> user_funcs.txt
-	# Get user functions code sizes
-	codeSize user_funcs.txt 2> func_size.txt
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -funcname < $(PROGRAM).bc > /dev/null 2> user_funcs.txt
+	# Get the code size of user functions
+	codeSize user_funcs.txt 2> function_size.txt
 	-rm user_funcs.txt
 
-mapping.txt: $(PROGRAM) cm-profile
+map.txt: $(PROGRAM) function_size.txt
 	# Get code overlay scheme
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -smmcmh-overlay -if-func-size func_size.txt -of-size-regions spm_code_size.txt ${code_size} ${num_regions} < $(PROGRAM).bc > /dev/null 2> mapping.txt
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -get-map -func-size function_size.txt ${code_size_constraint} ${num_region_constraint} -output-size code_output.txt < $(PROGRAM).bc > /dev/null 2> map.txt
 	# Get the linker script based on overlay scheme
-	smmmake --configure-spm-linkerscript mapping.txt
+	smmmake --configure-spm-linkerscript map.txt
 
-cm: basic_$(PROGRAM).bc dma.bc code_manager.bc mapping.txt 
+cm_cost.txt: $(PROGRAM) function_size.txt 
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -estimate-cost -func-size function_size.txt -output-cost cm_cost.txt < $(PROGRAM).bc > /dev/null
+
+cm: basic_$(PROGRAM).bc dma.bc code_manager.bc map.txt 
 	llvm-link -o temp_$(PROGRAM).bc dma.bc code_manager.bc basic_$(PROGRAM).bc
 	# Insert code management functions
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm -overlaying mapping.txt --debug-only=smmcm < temp_$(PROGRAM).bc > $@_$(PRO
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm -map map.txt --debug-only=smmcm < temp_$(PROGRAM).bc > $@_$(PRO
 	GRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
 	objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 
-ecm: basic_$(PROGRAM).bc dma.bc code_manager.bc mapping.txt heap_allocator.bc
+ecm: basic_$(PROGRAM).bc dma.bc code_manager.bc map.txt
 	llvm-link -o temp_$(PROGRAM).bc dma.bc code_manager.bc basic_$(PROGRAM).bc
 	# Insert code management functions based on code overlay scheme
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -overlaying mapping.txt --debug-only=smmecm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	llvm-link -o temp2_$(PROGRAM).bc heap_allocator.bc temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMBase.so -smm-cache --debug-only=smm < temp2_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt --debug-only=smmecm < temp_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
 	objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 
-# For data management
-edm: basic_$(PROGRAM).bc dma.bc spm_heap_allocator.bc
-	llvm-link -o temp_$(PROGRAM).bc dma.bc basic_$(PROGRAM).bc spm_heap_allocator.bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMEGM.so -smmegm ${tile_size} ${data_size} --debug-only=smmegm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMBase.so -smm-epilog < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+
+# For stack management
+
+stack_frame_size_with_lib_funcs: $(PROGRAM)
+    	# The trace of function calls in Gem5 must have ben prepared
+
+	# Print the size of the stack frame of user-defined functions into stack_frame_size.txt
+	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> stack_frame_size.txt
+
+	# Print the names of the library functions into lib_funcs.txt
+	#opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -libfunc < $(PROGRAM).bc > /dev/null 2> lib_funcs.txt
+	# Get the stack frame size of the library functions listed in lib_funcs.txt and add them to stack_frame_size.txt
+	#libFuncFrameSize lib_funcs.txt stack_frame_size.txt
+
+	# Get the call paths and save the result in wcg_paths.txt, based on stack_frame_size.txt
+	#opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -wcg < $(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
+
+	#-rm -rf sm
+	#mkdir sm
+	#mv stack_frame_size.txt sm
+	#-rm lib_funcs.txt
+
+
+stack_frame_size.txt: $(PROGRAM)
+	# Print the size of the stack frame of user-defined functions into stack_frame_size.txt
+	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> stack_frame_size.txt
+
+stack_size_range.txt: $(PROGRAM) stack_frame_size.txt
+	opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -estimate-size -stack-frame-size stack_frame_size.txt < $(PROGRAM).bc > /dev/null 2> stack_size_range.txt 
+	
+
+sm_cost.txt: $(PROGRAM) stack_frame_size.txt 
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so --estimate-cost -stack-frame-size stack_frame_size.txt -output-cost sm_cost.txt < $(PROGRAM).bc > /dev/null
+
+sm: basic_$(PROGRAM).bc dma.bc stack_manager.bc
+	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSM.so -smmsm --debug-only=smmssm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-epilog -code 1 -global 0 --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
+	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
+	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
+	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
+	-rm temp*_$(PROGRAM).bc
+
+
+ssm: basic_$(PROGRAM).bc dma.bc stack_manager.bc stack_frame_size.txt
+	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmssm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-epilog -code 1 -global 0 --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
+	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
+	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
+	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
+	-rm temp*_$(PROGRAM).bc
+
+
+esm: basic_$(PROGRAM).bc dma.bc stack_manager.bc stack_frame_size.txt
+	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt --debug-only=smmesm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-epilog -code 1 -global 0 --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -163,30 +149,55 @@ edm: basic_$(PROGRAM).bc dma.bc spm_heap_allocator.bc
 	-rm temp*_$(PROGRAM).bc
 
 
-# For integrated management 
+# For global management
+gm_cost.txt: $(PROGRAM)
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMGMH.so --estimate-cost -output-cost gm_cost.txt < $(PROGRAM).bc > /dev/null
 
-im: basic_$(PROGRAM).bc dma.bc stack_manager.bc  code_manager.bc mapping.txt heap_allocator.bc 
-	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc code_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSM.so -smmsm --debug-only=smmsm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm -overlaying mapping.txt --debug-only=smmcm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+global_variable_size.txt: $(PROGRAM)
+	# Get the size of global variables
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMGMH.so -size < $(PROGRAM).bc > /dev/null 2> global_variable_size.txt
+
+egm: basic_$(PROGRAM).bc dma.bc spm_heap_allocator.bc
+	llvm-link -o temp_$(PROGRAM).bc dma.bc basic_$(PROGRAM).bc spm_heap_allocator.bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMEGM.so -smmegm ${tile_size} ${global_size_constraint} -debug-only=smmegm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-epilog -code 1 -global 1 --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
 	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
-	-rm temp_$(PROGRAM).bc
+	-rm temp*_$(PROGRAM).bc
 
-eim: basic_$(PROGRAM).bc dma.bc stack_manager.bc  code_manager.bc mapping.txt spm_heap_allocator.bc
+
+# For integrated management
+
+mem_config.txt: $(PROGRAM)
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMIMH.so -estimate-accesses ${data_size_constraint} -output mem_config.txt --debug-only=smmim < $(PROGRAM).bc > /dev/null
+
+eim-spm: basic_$(PROGRAM).bc dma.bc stack_manager.bc  code_manager.bc map.txt spm_heap_allocator.bc
 	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc code_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm -spm-stack-size ${spm_stack_size} -stack-frame-sizes esm/stack_frame_sizes.txt < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -overlaying mapping.txt < temp1_$(PROGRAM).bc > temp2_$(PROGRAM).bc
-	llvm-link -o temp3_$(PROGRAM).bc temp2_$(PROGRAM).bc spm_heap_allocator.bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMEGM.so -smmegm ${tile_size} ${data_size} < temp3_$(PROGRAM).bc > temp4_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMBase.so -smm-epilog < temp4_$(PROGRAM).bc > $@_$(PROGRAM).bc
-	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
-	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
-	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	llvm-link -o temp2_$(PROGRAM).bc temp1_$(PROGRAM).bc spm_heap_allocator.bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMEGM.so -smmegm ${global_size_constraint} < temp2_$(PROGRAM).bc > temp3_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt < temp3_$(PROGRAM).bc > temp4_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp4_$(PROGRAM).bc > eim_$(PROGRAM).bc
+	llvm-dis < eim_$(PROGRAM).bc > eim_$(PROGRAM).ll
+	llc -O3 -o eim_$(PROGRAM).s eim_$(PROGRAM).bc 
+	$(CC) -o eim_$(PROGRAM) eim_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
+	#objdump -d eim_$(PROGRAM) > eim_$(PROGRAM).dis
 	rm temp*_$(PROGRAM).bc
+
+eim-cache: basic_$(PROGRAM).bc dma.bc stack_manager.bc  code_manager.bc map.txt
+	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc code_manager.bc basic_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smmim < temp1_$(PROGRAM).bc > eim_$(PROGRAM).bc
+	llvm-dis < eim_$(PROGRAM).bc > eim_$(PROGRAM).ll
+	llc -O3 -o eim_$(PROGRAM).s eim_$(PROGRAM).bc 
+	$(CC) -o eim_$(PROGRAM) eim_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
+	#objdump -d eim_$(PROGRAM) > eim_$(PROGRAM).dis
+	rm temp*_$(PROGRAM).bc
+
+eim:
+	${mem_config}
 
 # Common
 dma.bc:$(SMMDIR)/common/lib/dma.c
@@ -201,6 +212,9 @@ code_manager.bc:$(SMMDIR)/code/lib/code_manager.c
 spm_heap_allocator.bc:$(SMMDIR)/heap/lib/spm_heap_allocator.c
 	$(CC) -I$(SMMDIR)/common/include -I$(SMMDIR)/heap/include -include spm_heap_allocator.h $(CFLAGS) -emit-llvm -c $< -o $@
 
+mem_heap_allocator.bc:$(SMMDIR)/heap/lib/mem_heap_allocator.c
+	$(CC) -I$(SMMDIR)/common/include -I$(SMMDIR)/heap/include -include mem_heap_allocator.h $(CFLAGS) -emit-llvm -c $< -o $@
+
 %.bc: %${source_file_extension}
 	$(CC) $(CFLAGS) -emit-llvm -c $< -o $@
 
@@ -209,9 +223,8 @@ cfg: $(PROGRAM)
 	opt -dot-cfg-only < $(PROGRAM).bc
 
 clean:
-	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.png ${outfile} sm_$(PROGRAM) ssm_$(PROGRAM) esm_$(PROGRAM) cm_$(PROGRAM) ecm_$(PROGRAM) edm_$(PROGRAM) im_$(PROGRAM) eim_$(PROGRAM) func_size.txt mapping.txt spm_code_size.txt
+	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.png ${outfile} sm_$(PROGRAM) ssm_$(PROGRAM) esm_$(PROGRAM) cm_$(PROGRAM) ecm_$(PROGRAM) edm_$(PROGRAM) im_$(PROGRAM) eim_$(PROGRAM) map.txt code_output.txt 
     """
-
 
 	# Create the makefile using the created linker script
 	if (not os.path.isfile("Makefile")): 
@@ -245,7 +258,7 @@ clean:
 			if (outfile == ""):
 				makefile = makefile.replace("${outfile}", "")
 			else:
-				makefile = makefile.replace("${outfile}", outfile + " sm_" + outfile + " ssm_" + outfile + " esm_" + outfile + " cm_" + outfile + "ecm_" + outfile + " eam_" + outfile + " im_" + outfile + " eim_" + outfile)
+				makefile = makefile.replace("${outfile}", outfile + " sm_" + outfile + " ssm_" + outfile + " esm_" + outfile + " cm_" + outfile + "ecm_" + outfile + " edm_" + outfile + " im_" + outfile + " eim_" + outfile)
 			# make prof
 			makefile = makefile.replace("${arguments}", arguments)
 			if (infile != ""):
@@ -253,50 +266,50 @@ clean:
 			else:
 				makefile = makefile.replace("${infile}", "")
 			if (stacksize != 0):
-				makefile = makefile.replace("${spm_stack_size}", str(stacksize))
+				makefile = makefile.replace("${stack_size_constraint}", "-size-constraint " + str(stacksize))
 			else:
-				makefile = makefile.replace("${spm_stack_size}", "")
+				makefile = makefile.replace("${stack_size_constraint}", "-size-constraint 0")
 			if (codesize != 0):
-				makefile = makefile.replace("${code_size}", "-code-size " + str(codesize))
+				makefile = makefile.replace("${code_size_constraint}", "-size-constraint " + str(codesize))
 			else:
-				makefile = makefile.replace("${code_size}", "")
+				makefile = makefile.replace("${code_size_constraint}", "")
 			if (numregions != 0):
-				makefile = makefile.replace("${num_regions}", "-num-regions " + str(numregions))
+				makefile = makefile.replace("${num_region_constraint}", "-num-region-constraint " + str(numregions))
 			else:
-				makefile = makefile.replace("${num_regions}", "")
-			if tilesize != 0:
-				makefile = makefile.replace("${tile_size}", "-tile-size " + str(tilesize))
+				makefile = makefile.replace("${num_region_constraint}", "")
+			if globalsize != 0:
+				makefile = makefile.replace("${global_size_constraint}", "-size-constraint " + str(globalsize))
 			else:
-				makefile = makefile.replace("${tile_size}", "")
+				makefile = makefile.replace("${global_size_constraint}", "-size-constraint 0")
 			if datasize != 0:
-				makefile = makefile.replace("${data_size}", "-data-size " + str(datasize))
+				makefile = makefile.replace("${data_size_constraint}", "-size-constraint " + str(datasize))
 			else:
-				makefile = makefile.replace("${data_size}", "")
+				makefile = makefile.replace("${data_size_constraint}", "")
+			if memconfig == 0:
+				makefile = makefile.replace("${mem_config}", "make eim-spm")
+			else:
+				makefile = makefile.replace("${mem_config}", "make eim-cache")
 			f.write(makefile)
 
 
 # Create a makefile for SMM applicatoin management
-def create_linkerscript_spm(mapping_file = ""):
-	# Create the overlay of sections in the linker script from mapping file
+def create_linkerscript_spm(map_file = ""):
+	# Create the overlay of sections in the linker script from map file
 	custom_script = []
 
 	#custom_script.append("\n  . = ALIGN(0x10);\n")
 	#custom_script.append("\n  . = __executable_start + 0x100000;\n")
-	custom_script.append("\n  . = ALIGN(0x100000);\n")
+	#custom_script.append("\n  . = ALIGN(0x100000);\n")
+	custom_script.append("\n  . = ALIGN(0x400);\n")
 	custom_script.append("  _spm_begin = .;\n")
-	custom_script.append("\n  _spm_reserved_begin = .;\n")
-	custom_script.append("  _spm_reserved_end = _spm_reserved_begin + 0x100000;\n");
-	custom_script.append("  .management_functions : { *.(management_functions) }\n")
-	custom_script.append("  .management_variables : { *.(management_variables) }\n")
-	custom_script.append("  . = _spm_reserved_end;\n");
 
 	custom_script.append("\n  _spm_code_begin = .;\n")
 	custom_script.append("  _spm_code_end = _spm_code_begin + 0x100000;\n");
 
-	#print(mapping_file)
-	if mapping_file != "":
+	#print(map_file)
+	if map_file != "":
 		overlays = dict()
-		with open(mapping_file) as f:
+		with open(map_file) as f:
 			numSec = int(f.readline())
 			for i in range(numSec):
 				overlays[i] = {"functions": []}
@@ -330,6 +343,13 @@ def create_linkerscript_spm(mapping_file = ""):
 
 	custom_script.append("  . = _spm_code_end + 0x100000;\n");
 
+	custom_script.append("\n  _spm_reserved_begin = .;\n")
+	custom_script.append("  _spm_reserved_end = _spm_reserved_begin + 0x100000;\n");
+	custom_script.append("  .management_text : { *.(management_text) }\n")
+#	custom_script.append("  .management_variables : { *.(management_variables) }\n")
+	custom_script.append("  . = _spm_reserved_end;\n");
+
+
 	custom_script.append("\n  _spm_stack_begin = .;\n");
 	custom_script.append("  _spm_stack_end = _spm_stack_begin + 0x100000;\n");
 	custom_script.append("  . = _spm_stack_end;\n");
@@ -351,6 +371,11 @@ def create_linkerscript_spm(mapping_file = ""):
 
 	custom_script.append("\n  _cacheable_begin = .;\n")
 
+	custom_script.append("\n  _cacheable_code_begin = .;\n")
+	custom_script.append("  _cacheable_code_end = _cacheable_code_begin + 0x100000;\n");
+	custom_script.append("  .user_text : { *.(user_text) }\n")
+	custom_script.append("  . = _cacheable_code_end;\n");
+
 	custom_script.append("\n  _cacheable_stack_begin = .;\n")
 	custom_script.append("  _cacheable_stack_end = _cacheable_stack_begin + 0x100000;\n")
 	custom_script.append("  . = _cacheable_stack_end;\n\n");
@@ -364,11 +389,6 @@ def create_linkerscript_spm(mapping_file = ""):
 	custom_script.append("  _cacheable_data_end = _cacheable_data_begin + 0x100000;\n");
 	custom_script.append("  .user_data : { *.(user_data) }\n")
 	custom_script.append("  . = _cacheable_data_end;\n");
-
-	custom_script.append("\n  _cacheable_code_begin = .;\n")
-	custom_script.append("  _cacheable_code_end = _cacheable_code_begin + 0x100000;\n");
-	custom_script.append("  .user_text : { *.(user_text) }\n")
-	custom_script.append("  . = _cacheable_code_end;\n");
 
 
 
@@ -553,20 +573,19 @@ def create_runme_smmcode(arguments="", infile = "", outfile=""):
     		subprocess.Popen("chmod +x runme_cm", stdout=subprocess.PIPE, shell=True)
 
 
-def create_runme_smmdata(arguments="", infile = "", outfile="", l1d_size = 0, l1i_size = 0):
+def create_runme_smmglobal(arguments="", infile = "", outfile="", l1d_size = 0, l1i_size = 0):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
-	if (not os.path.isfile("runme_dm")):
-		with open("runme_dm", "w") as f:
+	if (not os.path.isfile("runme_gm")):
+		with open("runme_gm", "w") as f:
 			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			edm_text = "$SIMDIR/build/X86/gem5.opt -q -r -d m5out/spm/smmeam $SIMDIR/configs/example/se.py --cpu-type=atomic -c edm_" + program
+			egm_text = "$SIMDIR/build/X86/gem5.opt -q -r -d m5out/spm/smmegm $SIMDIR/configs/example/se.py --cpu-type=atomic -c egm_" + program
 			if (arguments != ""):
-				edm_text = edm_text + " -o \"" + arguments.replace("output", "edm_output", 1) + "\""
+				egm_text = egm_text + " -o \"" + arguments.replace("output", "egm_output", 1) + "\""
 			if (infile!= ""):
-				edm_text = edm_text + " --input=\"" + infile + "\""
+				egm_text = egm_text + " --input=\"" + infile + "\""
 			if (outfile != ""):
-				edm_text = edm_text + " --output=\"edm_" + outfile + "\""
-
+				egm_text = egm_text + " --output=\"egm_" + outfile + "\""
 			cache_params = ""
 			if l1d_size  or l1i_size:
 				cache_params = " --caches"
@@ -574,14 +593,9 @@ def create_runme_smmdata(arguments="", infile = "", outfile="", l1d_size = 0, l1
 					cache_params = cache_params + " --l1d_size " + str(l1d_size)
 				if l1i_size:
 					cache_params = cache_params + " --l1i_size " + str(l1i_size)
-
 			f.write(prolog + "\n")
-			f.write(edm_text + cache_params + "\n")
-    		subprocess.Popen("chmod +x runme_dm", stdout=subprocess.PIPE, shell=True)
-
-
-
-
+			f.write(egm_text + cache_params + "\n")
+    		subprocess.Popen("chmod +x runme_gm", stdout=subprocess.PIPE, shell=True)
 
 # Create a makefile for a cache-based architecture
 def create_makefile_cache(outfile=""):
@@ -607,8 +621,9 @@ all: $(PROGRAM)
 $(PROGRAM): $(OBJECTS) mem_heap_allocator.bc
 	llvm-link -o temp_$@.bc $(OBJECTS) mem_heap_allocator.bc
 	opt $(OPTLVL) -disable-inlining < temp_$@.bc > temp1_$@.bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMBase.so -smm-prolog < temp1_$@.bc > temp2_$@.bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMBase.so -smm-cache --debug-only=smm-cache < temp2_$@.bc > $@.bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-prolog < temp1_$@.bc > temp2_$@.bc
+	#opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-cache --debug-only=smm-cache < temp2_$@.bc > $@.bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-stack -user-global -user-heap --debug-only=smmim < temp2_$@.bc > $@.bc
 	llvm-dis < $@.bc > $@.ll
 	llc $(OPTLVL) -o $@.s $@.bc 
 	$(CC) -o $@ $@.s $(LDFLAGS) -Wl,-T,cache.ld
@@ -658,8 +673,10 @@ def create_linkerscript_cache():
 	# Create the section for user functions
 	custom_script = []
 	#custom_script.append("\n\n  . = ALIGN(0x10);\n")
-	custom_script.append("\n  . = ALIGN(0x100000);\n")
+	#custom_script.append("\n  . = ALIGN(0x100000);\n")
+	custom_script.append("\n  . = ALIGN(0x400);\n")
 	#custom_script.append("\n  . = __executable_start + 0x100000;\n")
+	custom_script.append("\n  . = 0xa00400;\n")
 	custom_script.append("\n  _cacheable_begin = .;\n")
 
 	custom_script.append("\n  _cacheable_code_begin = .;\n")
@@ -708,108 +725,7 @@ def create_linkerscript_cache():
     					linker_script.write(line + "\n")
 				i = i+1
 				line = implicit_linker_script[i]
-			break;
-
-
-
-# Create a makefile for using hardware caching
-def create_makefile_icache(arguments="", infile = "", outfile=""):
-	#  make file
-	makefile = """
-PROGRAM = ${program}
-
-INCLUDEDIRS=
-INCLUDE=
-LIBDIRS=
-LIBS = -lm
-OPTLVL = -O3
-
-OBJECTS = ${original_objects}
-CC=clang
-CFLAGS = $(INCLUDEDIRS) $(INCLUDE) $(OPTLVL) -fno-inline
-LDFLAGS = $(LIBDIRS) $(LIBS) -static
-
-all: $(PROGRAM)
-
-$(PROGRAM): $(OBJECTS)
-	llvm-link -o temp_$@.bc $(OBJECTS)
-	opt $(OPTLVL) -disable-inlining < temp_$@.bc > $@.bc
-	llvm-dis < $@.bc > $@.ll
-	llc $(OPTLVL) -o $@.s $@.bc 
-	$(CC) -o $@ $@.s $(LDFLAGS) -Wl,-T,cache.ld
-	objdump -d $@ > $@.dis
-
-
-
-%.bc: %${source_file_extension}
-	$(CC) $(CFLAGS) -emit-llvm -c $< -o $@
-
-callgraph: $(PROGRAM)
-	opt -dot-callgraph < $(PROGRAM).bc
-	dot -Tpng callgraph.dot -o $(PROGRAM).png
-
-clean:
-	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.png ${outfile} 
-    """
-
-	# Create the linker script for SPM setup
-	if (not os.path.isfile("spm.ld")): 
-		with open('spm.ld', 'w') as outFile:
-			inFile = subprocess.Popen("ld --verbose", stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
-			i = 0
-			while i <  range(len(inFile)):
-		    		line = inFile[i]
-    				while (line.find("==================================================") == -1):
-					i = i+1
-					line = inFile[i]
-				i = i + 1
-    				line = inFile[i]
-				while (line.find("==================================================") == -1):
-					if line.find("executable_start") != -1:
-					  	outFile.write(line.replace("0x400000", "0x000000") + "\n  . = ALIGN(0x10); \n  _spm_begin = .;\n  . = . + 0x100000;\n  _spm_end = .;\n  . = _spm_begin; \n  .spm           : { *(.spm) }\n  . = _spm_end;\n")
-					else:
-    						outFile.write(line + "\n")
-					i = i+1
-					line = inFile[i]
-				break;
-
-	# Create the makefile using the created linker script
-	if (not os.path.isfile("Makefile")): 
-		cwd = os.getcwd()
-		files = os.listdir(cwd)
-		objects = []
-		source_file_extension = ""
-		for i in range(len(files)):
-			(file, extension) = os.path.splitext(files[i])
-			if(extension == ".c" or extension == ".cpp" or extension == ".cc"):
-				objects.append(file)
-				if source_file_extension == "":
-					source_file_extension = extension
-		objects = list(set(objects))
-		original_objects = ""
-	   	for i in range(len(objects)):
-			original_objects = original_objects + objects[i] + ".bc" + " "
-		# Use the name of current folder as the name of generated executable file
-		program = os.path.basename(cwd)
-		with open('Makefile', 'w') as f:
-			# make + make opt
-			makefile = makefile.replace("${original_objects}", original_objects)
-			makefile = makefile.replace("${program}", program)
-			makefile = makefile.replace("${source_file_extension}", source_file_extension)
-			# make clean
-			if (outfile == ""):
-				arg_list = arguments.split()
-    				for i in range(len(arg_list)):
-					if "output" in arg_list[i]:
-						outfile = arg_list[i] 
-			makefile = makefile.replace("${outfile}", outfile)
-			# make prof
-			makefile = makefile.replace("${arguments}", arguments)
-			if (infile != ""):
-				makefile = makefile.replace("${infile}", "< " + infile)
-			else:
-				makefile = makefile.replace("${infile}", "")
-			f.write(makefile)
+			break
 
 def create_runme_cache(dsize = "", isize = "", arguments="", infile="", outfile=""):
 	program = os.path.basename(os.getcwd())
@@ -837,57 +753,58 @@ def create_runme_cache(dsize = "", isize = "", arguments="", infile="", outfile=
 # Get options
 if __name__ == "__main__":
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["help", "configure-cache", "configure-icache", "configure-stack", "configure-data", "configure-code", "configure-spm", "configure-spm-linkerscript=", "stack-size=", "data-size=", "tile-size=", "code-size=", "num-regions=", "args=", "input=", "output=", "clean", "l1d_size=", "l1i_size="]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["help", "configure-cache", "configure-stack", "configure-data", "configure-code", "configure-spm", "configure-spm-linkerscript=", "code-size=", "num-regions=", "data-size=", "mem-config=", "stack-size=", "global-size=",  "args=", "input=", "output=", "clean", "l1d_size=", "l1i_size="]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
 	arguments = ""
 	infile = ""
 	outfile = ""
-	config = 0
-	stacksize = 0
-	datasize = 0
-	tilesize = 0
+	config = ""
 	codesize = 0
 	numregions = 0
-	overlaying = ""
+	datasize = 0
+	memconfig = 0
+	stacksize = 0
+	globalsize = 0
+	map = ""
 	dsize = ""
 	isize = ""
 	for opt, arg in opts:
 		if opt in ("-h", "--help"):
-			print 'smmmake --configure-cache --configure-stack --configure-data --configure-code --configure-spm'
+			print 'smmmake --configure-cache --configure-spm'
 			sys.exit()
 		elif opt in ("--configure-cache"):
-			config = 1
-		elif opt in ("--configure-icache"):
-			config = 2
-		elif opt in ("--configure-stack"):
-			config = 3
-		elif opt in ("--configure-data"):
-			config = 4
-		elif opt in ("--configure-code"):
-			config = 5
+			config = "cache"
 		elif opt in ("--configure-spm"):
-			config = 6
+			config = "spm"
+		elif opt in ("--configure-code"):
+			config = "code"
+		elif opt in ("--configure-stack"):
+			config = "stack"
+		elif opt in ("--configure-global"):
+			config = "global"
 		elif opt in ("--configure-spm-linkerscript"):
-			config = 7
-			overlaying = arg
+			config = "linkerscript"
+			map = arg
 		elif opt in ("--args"):
 			arguments = arg
 		elif opt in ("--input"):
 			infile = arg
 		elif opt in ("--output"):
 			outfile = arg
-		elif opt in("--stack-size"):
-			stacksize = arg
-		elif opt in("--data-size"):
-			datasize = arg
 		elif opt in("--code-size"):
 			codesize = arg
-		elif opt in("--tile-size"):
-			tilesize = arg
 		elif opt in("--num-regions"):
 			numregions = arg
+		elif opt in("--data-size"):
+			datasize = arg
+		elif opt in("--mem-config"):
+			memconfig = arg
+		elif opt in("--stack-size"):
+			stacksize = arg
+		elif opt in("--global-size"):
+			globalsize = arg
 		elif opt in ("--clean"):
 			if (os.path.isfile("spm.ld")):
     				subprocess.Popen("rm spm.ld", stdout=subprocess.PIPE, shell=True)
@@ -906,33 +823,31 @@ if __name__ == "__main__":
 		else:
 			assert False, "unhandled option"
 
-	if config == 1:
+	if config == "cache":
 		create_makefile_cache(outfile)
 		create_linkerscript_cache()
 		create_runme_cache(dsize, isize, arguments, infile, outfile)
-    	if config == 2:
-		create_makefile_icache(arguments, infile, outfile)
-		create_runme_cache(dsize, isize, arguments, infile, outfile)
-	if config == 3:
-		create_makefile_spm(arguments, infile, outfile, stacksize, 0, 0, 0, 0)
-    		create_linkerscript_spm()
-		create_runme_smmstack(arguments, infile, outfile)
-	if config == 4:
-		create_makefile_spm(arguments, infile, outfile, 0, datasize, tilesize, 0, 0)
-    		create_linkerscript_spm()
-		create_runme_spm(arguments, infile, outfile, dsize, isize)
-		create_runme_smmdata(arguments, infile, outfile)
-    	if config == 5:
-		create_makefile_spm(arguments, infile, outfile, 0, 0, 0, codesize, numregions)
-		create_runme_spm(arguments, infile, outfile, dsize, isize)
-		create_runme_smmcode(arguments, infile, outfile)
-    	if config == 6:
-		create_makefile_spm(arguments, infile, outfile, stacksize, datasize, tilesize, codesize, numregions)
+    	if config == "spm":
+		create_makefile_spm(arguments, infile, outfile, codesize, numregions, datasize, stacksize, globalsize, memconfig)
     		create_linkerscript_spm()
 		create_runme_spm(arguments, infile, outfile, dsize, isize)
 		create_runme_smmint(arguments, infile, outfile, dsize, isize)
+		create_runme_smmcode(arguments, infile, outfile)
 		create_runme_smmstack(arguments, infile, outfile, dsize, isize)
-		create_runme_smmdata(arguments, infile, outfile, dsize, isize)
-    	if config == 7:
-		create_linkerscript_spm(overlaying)
+		create_runme_smmglobal(arguments, infile, outfile, dsize, isize)
+    	if config == "code":
+		create_makefile_spm(arguments, infile, outfile, codesize, numregions, 0, 0, 0)
+		create_runme_spm(arguments, infile, outfile, dsize, isize)
+		create_runme_smmcode(arguments, infile, outfile)
+	if config == "stack":
+		create_makefile_spm(arguments, infile, outfile, 0, 0, 0, stacksize, 0)
+    		create_linkerscript_spm()
+		create_runme_smmstack(arguments, infile, outfile)
+	if config == "global":
+		create_makefile_spm(arguments, infile, outfile, 0, 0, 0, 0, globalsize)
+    		create_linkerscript_spm()
+		create_runme_spm(arguments, infile, outfile, dsize, isize)
+		create_runme_smmglobal(arguments, infile, outfile)
+    	if config == "linkerscript":
+		create_linkerscript_spm(map)
 

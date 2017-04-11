@@ -15,9 +15,7 @@ print directories
 for directory in directories:
 	os.chdir(directory)
 	print directory
-	#command = "make clean; smmmake --clean; rm -r m5out; rm -r configure-*;"
-	#command = "make clean; smmmake --clean; rm -r m5out;"
-	command = "make clean; smmmake --clean; rm spm_data_size.txt"
+	command = "make clean; smmmake --clean;"
 	subprocess.call(command, shell=True)
 	os.chdir(work_dir)
 os.chdir(cwd)

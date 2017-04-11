@@ -29,15 +29,10 @@ for prog, options in argv.iteritems():
 		continue
 	print prog
 	os.chdir(prog)
-	#command = "smmmake --configure-stack " + options + "; make; make ssm-prof; ./runme-prof; make esm-prof; make clean; smmmake --clean;"
 	command = "smmmake --configure-stack " + options
 	subprocess.call(command, shell=True)
 	command = "make -s"
 	subprocess.call(command, shell=True)
-	command = "make -s ssm-prof"
-	subprocess.call(command, shell=True)
-	command = "./runme-prof"
-	subprocess.call(command, shell=True)
-	command = "make -s esm-prof"
+	command = "make -s sm-profile"
 	subprocess.call(command, shell=True)
 	os.chdir(cwd)

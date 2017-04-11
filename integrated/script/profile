@@ -20,8 +20,6 @@ argv = {
     "susan.smoothing": "--args \"input_small.pgm output_small.smoothing.pgm -s\"",
 }
 
-
-
 cwd = os.getcwd()
 work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
 os.chdir(work_dir)
@@ -33,7 +31,7 @@ for prog, options in argv.iteritems():
 	print prog
 	os.chdir(prog)
 	#command = "smmmake --configure-stack " + options + "; make; make ssm-prof; ./runme-prof; make esm-prof; make clean; smmmake --clean;"
-	command = "smmmake --configure-stack " + options
+	command = "smmmake --configure-spm "
 	subprocess.call(command, shell=True)
 	command = "make -s"
 	subprocess.call(command, shell=True)
@@ -41,7 +39,17 @@ for prog, options in argv.iteritems():
 	#subprocess.call(command, shell=True)
 	#command = "./runme-prof"
 	#subprocess.call(command, shell=True)
-	command = "make -s esm-profile"
+	command = "make -s function_size.txt"
+	subprocess.call(command, shell=True)
+	#command = "make -s cm_cost.txt"
+	#subprocess.call(command, shell=True)
+	command = "make -s stack_frame_size.txt"
+	subprocess.call(command, shell=True)
+	command = "make -s stack_size_range.txt"
+	subprocess.call(command, shell=True)
+	#command = "make -s sm_cost.txt"
+	#subprocess.call(command, shell=True)
+	command = "make -s global_variable_size.txt"
 	subprocess.call(command, shell=True)
 	command = "make clean; smmmake --clean"
 	subprocess.call(command, shell=True)

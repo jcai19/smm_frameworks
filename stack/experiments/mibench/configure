@@ -68,7 +68,7 @@ for prog, options in argv.iteritems():
 	f.write(command)
     	f.close()
 
-	command = "chmod +x configure-cache; chmod +x configure-spm-min; chmod +x configure-spm-mid; chmod +x configure-spm-max;"
+	command = "chmod +x configure-cache; chmod +x configure-spm-*;"
 	subprocess.call(command, shell=True)
 
     	os.chdir(cwd)

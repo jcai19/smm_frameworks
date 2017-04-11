@@ -10,16 +10,16 @@ argv = {
     "basicmath" : "output_small.txt",
     "CRC32" : "output_small.txt",
     "dijkstra" : "output_small.dat",
-    "patricia" : "output_small.txt",
-#    "FFT" : "output_small.txt",
-#    "IFFT" : "output_small.inv.txt",
+#    "patricia" : "output_small.txt",
+    "FFT" : "output_small.txt",
+    "IFFT" : "output_small.inv.txt",
     "rijndael.decode": "output_small.dec",
     "rijndael.encode": "output_small.enc",
     "sha": "output_small.txt",
     "stringsearch": "output_small.txt",
     "susan.corners" : "output_small.corners.pgm",
     "susan.edges": "output_small.edges.pgm",
-#   "susan.smoothing": "output_small.smoothing.pgm",
+   "susan.smoothing": "output_small.smoothing.pgm",
 }
 
 cwd = os.getcwd()
