@@ -2,21 +2,19 @@
 #define __CODE_MANAGER_H__
 
 typedef struct _Region {
-    char *func_name;
+    char *func_lma;
 } Region;
 
 typedef struct _Map {
-    const char *func_name;
     char *func_lma;
     char *func_vma;
     unsigned long func_size;
     Region *reg;
 } Map;
 
-int c_init(const char *mapping_file_name);
-int c_init_reg(int num); 
+int c_init_regions(int num); 
 int c_init_map(int num, ...);
-char* c_get(char *func_name);
+char* c_get(char *func_lma);
 
 extern Region *_region_table;
 extern Map *_mapping_table;
