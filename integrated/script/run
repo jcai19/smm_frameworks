@@ -7,15 +7,14 @@ import sys
 
 
 def run():
-
-	for ratio in range[0, 1, 0.25]
-		command = "./configure --dcache-size " + str(dsize) + " --tile-size " + str(tile_size) + " --ratio " + str(ratio)
+    	sizes = [2, 4, 8, 16, 32, 64, 128]
+	for sramSize in sizes:
+		command = "./configure --isram-size " + str(sramSize*1024) + " --dsram-size " + str(sramSize*1024)
 		subprocess.call(command, shell=True)
 		command = "./run-cache; ./clean; ./run-spm"
 		subprocess.call(command, shell=True)
-		command = "./tabulate --output experiment_" + str(dsize) + "B.xlsx"
+		command = "./stat-mnmt --output experiment_" + str(sramSize) + "KB.xlsx"
 		subprocess.call(command, shell=True)
-		dsize = dsize * 2
 
 def run_data():
 	tile_size = 128

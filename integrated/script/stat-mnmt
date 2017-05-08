@@ -7,13 +7,13 @@ import sys
 
 
 
-def getMnmtStats(prog, ws, r):
+def getIntegratedMnmtStats(prog, ws, r):
 	#assert (numFuncs >= 2)
     	c = ord('A')
     	ws[chr(c)+str(r)] = prog
 	c = c+1
 
-	# collect statistics of cache-based execution
+	# statistics of caching
 	path = "m5out/cache"
 
 	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
@@ -22,14 +22,6 @@ def getMnmtStats(prog, ws, r):
     		return
 	numInsts = float(tempList[1])
     	ws[chr(c)+str(r)] = numInsts
-	c = c+1
-
-	output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
-	numDcacheMisses = 0
-	if output != "":
-		tempList = output.split()
-		numDcacheMisses = float(tempList[1])
-    	ws[chr(c)+str(r)] = numDcacheMisses
 	c = c+1
 
 	output = subprocess.Popen("grep system.cpu.icache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
@@ -41,11 +33,19 @@ def getMnmtStats(prog, ws, r):
     	ws[chr(c)+str(r)] = numIcacheMisses
 	c = c+1
 
-	cacheExecTime = numInsts + (numDcacheMisses + numIcacheMisses) * startupCost
-    	ws[chr(c)+str(r)] = cacheExecTime
+	output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	numDcacheMisses = 0
+	if output != "":
+		tempList = output.split()
+		numDcacheMisses = float(tempList[1])
+    	ws[chr(c)+str(r)] = numDcacheMisses
 	c = c+1
 
-	# collect statistics of SPM-based execution
+	cacheExecTime = numInsts + (numDcacheMisses + numIcacheMisses) * startupCost
+    	ws[chr(c)+str(r)] = cacheExecTime
+	c = c+2
+
+	# statistics of our approach
 	path = "m5out/spm/smmeim"
 
 	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
@@ -56,13 +56,18 @@ def getMnmtStats(prog, ws, r):
     	ws[chr(c)+str(r)] = numInsts
 	c = c+1
 
-	# Use the number from caching if the memory configuration opts to use data cache
+	# the number of instruction cache misses depends on the configuration
+	columnNumIcacheMisses = c
+	c = c+1
+
 	output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	# use the number of data cache misses from caching if the sram configuration opts to use data cache only
 	#numDcacheMisses = 0
 	if output != "":
 		tempList = output.split()
 		numDcacheMisses = float(tempList[1])
-    	ws[chr(c)+str(r)] = numDcacheMisses
+	#ws[chr(c)+str(r)] = numDcacheMisses
+	columnNumDcacheMisses = c
 	c = c+1
 
 
@@ -78,11 +83,17 @@ def getMnmtStats(prog, ws, r):
     	ws[chr(c)+str(r)] = DMASize
 	c = c+1
 
-	spmExecTime = numInsts + numDMAs*startupCost + DMASize*transferTimePerByte + (numDcacheMisses)*startupCost
-    	ws[chr(c)+str(r)] = spmExecTime
+
+	# number of management calls
+	output = subprocess.Popen("grep system.cpu.num_func_calls_cget "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
 
-	ws[chr(c)+str(r)] = float(spmExecTime)/float(cacheExecTime)
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_ccall "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
 
 	output = subprocess.Popen("grep system.cpu.num_func_calls_sstore "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
@@ -109,35 +120,90 @@ def getMnmtStats(prog, ws, r):
     	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
 
-	output = subprocess.Popen("grep system.cpu.num_func_calls_cget "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
-	tempList = output.split()
-    	ws[chr(c)+str(r)] = float(tempList[1])
+	spmExecTime = numInsts + numDMAs*startupCost + DMASize*transferTimePerByte
+
+
+
+
+
+	f = open('im_sram_config.txt', 'r')
+    	if f.readline().strip() == "instruction cache":
+		isramConfig = 0
+		# disable instruction cache and use the number from caching
+		icacheSize = 0
+	else:
+		isramConfig = 1
+		icacheSize = 0
+	f.readline()
+    	if f.readline().strip() == "data cache":
+		dsramConfig = 0
+		# disable instruction cache and use the number from caching
+		dcacheSize = 0
+	else:
+		dsramConfig = 1
+		dspmSize = long(f.readline().split()[1])
+		dcacheSize = long(f.readline().split()[1])
+		dspmStackSize = long(f.readline().split()[1])
+		dspmGlobalSize = long(f.readline().split()[1])
+	f.close()
+
+
+	
+  	# check if code management is done on SPM
+	#print "\t" + chr(columnNumIcacheMisses) + ", " + str(r)
+	t = numIcacheMisses
+    	if isramConfig == 1:
+		t = 0
+    	ws[chr(columnNumIcacheMisses)+str(r)] = t
+	spmExecTime = spmExecTime + t*startupCost
+    	if isramConfig == 1:
+    		print "\tinstruction spm"
+		print "\t\t" + str(t)
+	else:
+		print "\tinstruction cache"
+		print "\t\t" + str(t)
+
+	if dsramConfig == 0:
+		print "\tdata cache"
+		print "\t\t" + str(t)
+	else:
+		print "\tdata spm" + " (cache size = " + str(dcacheSize) + ")"
+		print "\t\t" + str(t)
+	t = 0
+    	t = numDcacheMisses
+    	if dsramConfig == 1 and dcacheSize == 0:
+    		t = 0
+    	ws[chr(columnNumDcacheMisses)+str(r)] = t
+	spmExecTime = spmExecTime + t*startupCost
+	f.close()
+    	ws[chr(c)+str(r)] = spmExecTime
+	c = c+2
+
+	# normalized execution time
+	ws[chr(c)+str(r)] = float(spmExecTime)/float(cacheExecTime)
 	c = c+1
 
-	output = subprocess.Popen("grep system.cpu.num_func_calls_ccall "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
-	tempList = output.split()
-    	ws[chr(c)+str(r)] = float(tempList[1])
-	c = c+1
+	
 
 startupCost = 291
 transferTimePerByte = 0.24
 
-progInput = [
-	("adpcm.decode",2), 
-	("adpcm.encode",2),
-	#("basicmath",3),
-	("CRC32", 2),
-	("dijkstra",6),
-	("FFT",6),
-	("IFFT",6),
-	("patricia",5),
-	("rijndael.decode",4),
-	("rijndael.encode",5),
-	("sha",8),
-	("stringsearch",3),
-	("susan.corners", 19),
-	("susan.edges", 19),
-	("susan.smoothing", 19),
+programs = [
+	"adpcm.decode", 
+	"adpcm.encode",
+	"basicmath",
+	"CRC32",
+	"dijkstra",
+	"FFT",
+	"IFFT",
+	"patricia",
+	"rijndael.decode",
+	"rijndael.encode",
+	"sha",
+	"stringsearch",
+	"susan.corners",
+	"susan.edges",
+	"susan.smoothing",
 ]
 
 
@@ -145,7 +211,7 @@ progInput = [
 if __name__ == "__main__":
 
 	config = "integrated"
-    	output = "experiments.xlsx"
+    	output = "experiment.xlsx"
 
 	try:
 		opts, args = getopt.getopt(sys.argv[1:], "-h", ["output=", "global"]) 
@@ -171,14 +237,16 @@ if __name__ == "__main__":
 	ws1[chr(c)+'1'] = "cache-based statistics" 
 	ws1[chr(c)+str(r)] = "#insts"
 	c = c+1
-	ws1[chr(c)+str(r)] = "#dmisses"
-	c = c+1
 	ws1[chr(c)+str(r)] = "#imisses"
 	c = c+1
-	ws1[chr(c)+str(r)] = "time"
+	ws1[chr(c)+str(r)] = "#dmisses"
 	c = c+1
+	ws1[chr(c)+str(r)] = "time"
+	c = c+2
 	ws1[chr(c)+'1'] = "spm-based statistics"
 	ws1[chr(c)+str(r)] = "#insts"
+	c = c+1
+	ws1[chr(c)+str(r)] = "#imisses"
 	c = c+1
 	ws1[chr(c)+str(r)] = "#dmisses"
 	c = c+1
@@ -186,9 +254,9 @@ if __name__ == "__main__":
 	c = c+1
 	ws1[chr(c)+str(r)] = "#bytes"
 	c = c+1
-	ws1[chr(c)+str(r)] = "time"
+	ws1[chr(c)+str(r)] = "#cget"
 	c = c+1
-	ws1[chr(c)+str(r)] = "normalized time"
+	ws1[chr(c)+str(r)] = "#ccall"
 	c = c+1
 	ws1[chr(c)+str(r)] = "#sstore"
 	c = c+1
@@ -200,22 +268,26 @@ if __name__ == "__main__":
 	c = c+1
 	ws1[chr(c)+str(r)] = "#ptr_wr"
 	c = c+1
-	ws1[chr(c)+str(r)] = "#cget"
+	ws1[chr(c)+str(r)] = "time"
+	c = c+2
+	ws1[chr(c)+str(r)] = "normalized time"
 	c = c+1
-	ws1[chr(c)+str(r)] = "#ccall"
-	c = c+1
+
 
 	cwd = os.getcwd()
 	work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
 	os.chdir(work_dir)
   
 	r = 3
-	for prog,numFuncs in progInput:
+	for prog in programs:
 		print prog
 		os.chdir(prog)
 	#	command = ""
 	#	print "\t", numFuncs
-		getMnmtStats(prog, ws1,r)
+    		if config == "integrated":
+			getIntegratedMnmtStats(prog, ws1,r)
+    		elif config == "global":
+			getGlobalMnmtStats(prog, ws1,r)
 	#	print command
 	#	subprocess.call(command, shell=True)
 		r = r+1

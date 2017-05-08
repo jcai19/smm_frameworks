@@ -2,56 +2,86 @@
 import os
 import subprocess
 
-argv = {
-    "adpcm.decode" : "--input data/small.adpcm --output output_small.pcm", 
-    "adpcm.encode" : "--input data/small.pcm --output output_small.adpcm",
-    "basicmath" : "--output output_small.txt",
-    "CRC32" : "--args data/small.pcm --output output_small.txt",
-    "dijkstra" : "--args input.dat --output output_small.dat",
-    "patricia" : "--args small.udp --output output_small.txt",
-    "FFT" : "--args \"4 4096\" --output output_small.txt",
-    "IFFT" : "--args \"4 8192 -i\" --output output_small.inv.txt",
-    "rijndael.decode": "--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
-    "rijndael.encode": "--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
-    "sha": "--args \"input_small.asc\" --output output_small.txt",
-    "stringsearch": "--output output_small.txt",
-    "susan.corners" : "--args \"input_small.pgm output_small.corners.pgm -c\"",
-    "susan.edges": "--args \"input_small.pgm output_small.edges.pgm -e\"",
-    "susan.smoothing": "--args \"input_small.pgm output_small.smoothing.pgm -s\"",
-}
+programs = [
+    "adpcm.decode",
+    "adpcm.encode",
+    "basicmath",
+    "CRC32",
+    "dijkstra",
+    "patricia",
+    "FFT",
+    "IFFT",
+    "rijndael.decode",
+    "rijndael.encode",
+    "sha",
+    "stringsearch",
+    "susan.corners",
+    "susan.edges",
+    "susan.smoothing",
+]
 
 cwd = os.getcwd()
 work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+out = open('memory_footprint.txt', 'w')
 os.chdir(work_dir)
 
-for prog, options in argv.iteritems():
+for prog in programs:
 	if not os.path.isdir(prog):
 		print prog, "does not exist"
 		continue
 	print prog
 	os.chdir(prog)
-	#command = "smmmake --configure-stack " + options + "; make; make ssm-prof; ./runme-prof; make esm-prof; make clean; smmmake --clean;"
-	command = "smmmake --configure-spm "
+	command = "smmmake --configure-spm"
 	subprocess.call(command, shell=True)
 	command = "make -s"
 	subprocess.call(command, shell=True)
-	#command = "make -s ssm-profile"
-	#subprocess.call(command, shell=True)
-	#command = "./runme-prof"
-	#subprocess.call(command, shell=True)
 	command = "make -s function_size.txt"
 	subprocess.call(command, shell=True)
-	#command = "make -s cm_cost.txt"
-	#subprocess.call(command, shell=True)
+	command = "make -s code_size.txt"
+	subprocess.call(command, shell=True)
+
 	command = "make -s stack_frame_size.txt"
 	subprocess.call(command, shell=True)
-	command = "make -s stack_size_range.txt"
+	command = "make -s stack_size.txt"
 	subprocess.call(command, shell=True)
-	#command = "make -s sm_cost.txt"
-	#subprocess.call(command, shell=True)
 	command = "make -s global_variable_size.txt"
 	subprocess.call(command, shell=True)
 	command = "make clean; smmmake --clean"
 	subprocess.call(command, shell=True)
+	#  Code
+	numFuncs = 0
+	minCodeSize = 0
+	maxCodeSize = 0
+	f = open('function_size.txt', 'r')
+	minCodeSize = long(f.readline().split()[1])
+	maxCodeSize = minCodeSize
+	numFuncs = 1
+	for line in f:
+		numFuncs = numFuncs + 1
+		size = long(line.split()[1])
+    		maxCodeSize = maxCodeSize + size
+		if size < minCodeSize:
+			minCodeSize = size
+	f.close()
+	# Stack 
+	f = open('stack_size.txt', 'r')
+	minStackSize = long(f.readline().split()[1])
+	maxStackSize = long(f.readline().split()[1])
+	f.close()
+   	# Global
+	maxGlobalSize = 0
+	f = open('global_variable_size.txt', 'r')
+	for line in f:
+		maxGlobalSize = maxGlobalSize + long(line.split()[1])
+	f.close()
+
+	out.write(prog + "\n")
+	out.write("\tcode size: " + str(minCodeSize) + " " + str(maxCodeSize) + "\n")
+	out.write("\tnumber of functions: " + str(numFuncs) + "\n")
+	out.write("\tstack size: " + str(minStackSize) + " " + str(maxStackSize) + "\n")
+	out.write("\tgloal size: " + str(maxGlobalSize) + "\n")
+	out.write("\n")
+
 	os.chdir(work_dir)
 os.chdir(cwd)		
+out.close()

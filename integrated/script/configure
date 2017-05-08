@@ -7,25 +7,23 @@ import subprocess
 import sys
 
 
-argv = {
-    	"adpcm.decode" : "--input data/small.adpcm --output output_small.pcm", 
-	"adpcm.encode" : "--input data/small.pcm --output output_small.adpcm",
-	"basicmath" : "--output output_small.txt",
-	"CRC32" : "--args data/small.pcm --output output_small.txt",
-	"dijkstra" : "--args input.dat --output output_small.dat",
-	"FFT" : "--args \"4 4096\" --output output_small.txt",
-	"IFFT" : "--args \"4 8192 -i\" --output output_small.inv.txt",
-	"patricia" : "--args small.udp --output output_small.txt",
-	"rijndael.decode": "--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
-	"rijndael.encode": "--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\"",
-	"sha": "--args \"input_small.asc\" --output output_small.txt",
-	"stringsearch": "--output output_small.txt",
-	"susan.corners" : "--args \"input_small.pgm output_small.corners.pgm -c\"",
-	"susan.edges": "--args \"input_small.pgm output_small.edges.pgm -e\"",
-	"susan.smoothing": "--args \"input_small.pgm output_small.smoothing.pgm -s\"",
-}
-
-
+argv = [
+    	("adpcm.decode", "--input data/small.adpcm --output output_small.pcm"),
+	("adpcm.encode", "--input data/small.pcm --output output_small.adpcm"),
+	("basicmath", "--output output_small.txt"),
+	("CRC32", "--args data/small.pcm --output output_small.txt"),
+	("dijkstra", "--args input.dat --output output_small.dat"),
+	("FFT", "--args \"4 4096\" --output output_small.txt"),
+	("IFFT", "--args \"4 8192 -i\" --output output_small.inv.txt"),
+	("patricia", "--args small.udp --output output_small.txt"),
+	("rijndael.decode", "--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\""),
+	("rijndael.encode", "--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\""),
+	("sha", "--args \"input_small.asc\" --output output_small.txt"),
+	("stringsearch", "--output output_small.txt"),
+	("susan.corners", "--args \"input_small.pgm output_small.corners.pgm -c\""),
+	("susan.edges", "--args \"input_small.pgm output_small.edges.pgm -e\""),
+	("susan.smoothing", "--args \"input_small.pgm output_small.smoothing.pgm -s\""),
+]
 
 def GLB(num):
     return long(pow(2, math.floor(math.log(num, 2))))
@@ -35,297 +33,109 @@ def LGB(num):
 
 
 
-def configure_integrated(ratio):
+def configure_integrated(isramSize, dsramSize):
 	cwd = os.getcwd()
 	work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
-	out = open('memory_footprint.txt', 'w')
+	out = open(str(isramSize/1024)+'KB_' + 'sram_config.txt', 'w')
 	os.chdir(work_dir)
-	for prog, options in argv.iteritems():
+	for pair in argv:
+		prog = pair[0]
+		options = pair[1]
 		if not os.path.isdir(prog):
 			print prog, "does not exist"
 			continue
 		print prog
 		os.chdir(prog)
+		out.write('{:20s}'.format(prog));
 
-		spmCodeSize = 0
-		spmStackSize = 0
-		spmGlobalSize = 0
-		#  Code
-		numFuncs = 0
-		minCodeSize = 0
-		maxCodeSize = 0
-		f = open('function_size.txt', 'r')
-		minCodeSize = long(f.readline().split()[1])
-		maxCodeSize = minCodeSize
-		numFuncs = 1
-		for line in f:
-			numFuncs = numFuncs + 1
-			size = long(line.split()[1])
-    			maxCodeSize = maxCodeSize + size
-			if size < minCodeSize:
-				minCodeSize = size
+		command = "smmmake --configure-spm --isram-size " + str(isramSize) + " --dsram-size " + str(dsramSize) 
+		subprocess.call(command, shell=True)
+		command = "make im_sram_config.txt" 
+		subprocess.call(command, shell=True)
+    		icacheSize = 0
+    		dcacheSize = 0
+		dspmStackSize = 0
+		dspmGlobalSize = 0
+    		f = open('stack_size.txt', 'r')
+		minStackSize = long(f.readline().split()[1])
+ 		maxStackSize = long(f.readline().split()[1])
 		f.close()
-    		numCodeRegions = long(math.ceil(float(numFuncs) * ratio))
-		# Data 
-		f = open('stack_size_range.txt', 'r')
-		minStackSize = long(f.readline().split(":")[1])
-		maxStackSize = long(f.readline().split(":")[1])
-		f.close()
-		#spmCodeSize = LGB(long(math.ceil(float(maxCodeSize - minCodeSize)*ratio+float(minCodeSize))))
-    		spmDataSize = LGB(long(math.ceil(float(maxStackSize - minStackSize)*ratio+float(minStackSize))))
-		command = "smmmake --configure-spm --num-region " + str(numCodeRegions) +  " --data-size " + str(spmDataSize) 
-		subprocess.call(command, shell=True)
-		command = "make -s map.txt;"
-		subprocess.call(command, shell=True)
-		f = open('code_output.txt', 'r')
-		spmCodeSize = long(f.readline().split()[1])
-    		f.close()
-		command = "make clean;"
-		subprocess.call(command, shell=True)
 
-		command = "make mem_config.txt" 
-		subprocess.call(command, shell=True)
-		command = "make clean; smmmake --clean" 
-		subprocess.call(command, shell=True)
-
-    		iCacheSize = LGB(spmCodeSize)
-		dCacheSize = LGB(spmDataSize * 2)
-
-    		dsize = 0
-    		memConfig = 0
-		f = open('mem_config.txt', 'r')
-    		if f.readline() == "data spm":
-			spmStackSize = long(f.reeadline().split()[1])
-			spmGlobalSize = long(f.reeadline().split()[1])
-    			dsize = spmDataSize
+		f = open('im_sram_config.txt', 'r')
+    		if f.readline().strip() == "instruction cache":
+			isramConfig = 0
+			# disable instruction cache and use the number from caching
+			#icacheSize = isramSize
+			icacheSize = 0
+			out.write('{:20s}'.format("inst cache"));
 		else:
-			memConfig = 1
-			dsize = spmDataSize * 2
+			isramConfig = 1
+			icacheSize = 0
+			out.write('{:20s}'.format("inst spm"));
+		f.readline()
+    		if f.readline().strip() == "data cache":
+			out.write('{:20s}'.format("data cache"));
+			dsramConfig = 0
+			#dcacheSize = dsramSize
+			# disable data cache and use the number from caching
+			dcacheSize = 0
+		else:
+			dsramConfig = 1
+			dspmSize = long(f.readline().split()[1])
+			dcacheSize = long(f.readline().split()[1])
+			#dcacheSize = dsramSize - dspmSize
+			dspmStackSize = long(f.readline().split()[1])
+			dspmGlobalSize = long(f.readline().split()[1])
+			out.write('{:20s}'.format("data spm"));
+			out.write("\tdcache " + str(dcacheSize))
+			out.write("\tdspm " + str(dspmSize))
+			out.write("\tstack " + str(dspmStackSize)  + "(" +str(maxStackSize)+")")
+			out.write("\tglobal " + str(dspmGlobalSize))
 		f.close()
-		# Find parameters for global management
-		maxGlobalSize = 0
-		f = open('global_variable_size.txt', 'r')
-		for line in f:
-			maxGlobalSize = maxGlobalSize + long(line.split()[1])
-		f.close()
-
-		out.write(prog + "\n")
-		out.write("\tstack size: " + str(minStackSize) + " " + str(maxStackSize) + "\n")
-		out.write("\tcode size: " + str(minCodeSize) + " " + str(maxCodeSize) + "\n")
-		out.write("\tnumber of functions: " + str(numFuncs) + "\n")
-		#out.write("\tminimum SPM space:" + str(minCodeSize + minStackSize) + "\n")
-		#out.write("\tmaximum SPM space: " + str(maxCodeSize+maxStackSize) + "\n")
-		out.write("\tgloal size: " + str(maxGlobalSize) + "\n")
-		out.write("\n")
+    		command = "make clean; smmmake --clean" 
+		subprocess.call(command, shell=True)
 		# configure caches
 		f = open('configure-cache', 'w')
 		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-cache " + options + " --l1d_size " + str(dCacheSize) + "B --l1i_size " + str(iCacheSize) + "B"
+		command = command + "smmmake --clean; smmmake --configure-cache " + options + " --l1i_size " + str(isramSize) + "B --l1d_size " + str(dsramSize) + "B"
 		f.write(command)
     		f.close()
 		# configure SPM
 		f = open('configure-spm', 'w')
 		command = "#!/bin/sh\n"
-		if memConfig == 0:
-			command = command + "smmmake --clean; smmmake --configure-spm " + options + " --num-regions " + str(numCodeRegions) + " --mem-config " + str(memConfig) + " --stack-size " + str(spmStackSize) + " --global-size " + str(spmGlobalSize) +  " --l1d_size "+str(dsize)+"B"
-		else:
-			command = command + "smmmake --clean; smmmake --configure-spm " + options + " --num-regions " + str(numCodeRegions) + " --mem-config " + str(memConfig)
+		command = command + "smmmake --clean; smmmake --configure-spm " + options + " --l1i_size " + str(icacheSize) + "B --l1d_size " + str(dcacheSize) + "B" + " --isram-size " + str(isramSize) + " --isram-config " + str(isramConfig) + " --dsram-size " + str(dsramSize) + " --dsram-config " + str(dsramConfig) + " --stack-size " + str(dspmStackSize) + " --global-size " + str(dspmGlobalSize) 
 
 		print "\t", command
 		f.write(command)
 	    	f.close()
-
 		command = "chmod +x configure-spm*; chmod +x configure-cache; make clean; smmmake --clean"
-		subprocess.call(command, shell=True)
-
-	    	os.chdir(work_dir)
-
-	os.chdir(cwd)
-	out.close()
-
-
-    
-def configure_original(dsize, tile_size, stackSizeScale, codeSizeScale):
-	cwd = os.getcwd()
-	work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
-	out = open('spm_size.txt', 'w')
-	os.chdir(work_dir)
-	for prog, options in argv.iteritems():
-		if not os.path.isdir(prog):
-			print prog, "does not exist"
-			continue
-		print prog
-		os.chdir(prog)
-
-		# Find parameters for code management
-		numFuncs = 0
-		minCodeSize = 0
-		maxCodeSize = 0
-		f = open('function_size.txt', 'r')
-		minCodeSize = long(f.readline().split()[1])
-		maxCodeSize = minCodeSize
-		for line in f:
-			numFuncs = numFuncs + 1
-			size = long(line.split()[1])
-    			maxCodeSize = maxCodeSize + size
-			if size < minCodeSize:
-				minCodeSize = size
-
-		f.close()
-    		numRegions = 0
-		if codeSizeScale >= 1:
-			numRegions = numFuncs
-		else:
-	    		numRegions = long(math.ceil(float(numFuncs) * codeSizeScale))
-		command = "smmmake --configure-spm --num-region " + str(numRegions)
-		subprocess.call(command, shell=True)
-		command = "make -s mapping.txt;"
-		subprocess.call(command, shell=True)
-		f = open('code_output.txt', 'r')
-		spmCodeSize = long(f.readline().split()[1])
-		command = "make clean;"
-		subprocess.call(command, shell=True)
-
-		# Find parameters for stack management
-#		f = open('stack_frame_size.txt', 'r')
-#		minStackSize = 0
-#		maxStackSize = 0
-#		for line in f:
-#			funcName, stackFrameSizeStr = line.split()
-#			stackFrameSize = long(stackFrameSizeStr)
-#			if stackFrameSize > minStackSize:
-#				minStackSize = stackFrameSize
-#			maxStackSize += stackFrameSize
-#		f.close()
-
-		f = open('stack_size_range.txt', 'r')
-		minStackSize = long(f.readline().split(":")[1])
-		maxStackSize = long(f.readline().split(":")[1])
-		f.close()
-  		if stackSizeScale >= 1:
-			spmStackSize = maxStackSize
-		else:
-			spmStackSize = long(stackSizeScale * (maxStackSize - minStackSize)) + minStackSize
-
-
-
-		# Find parameters for global management
-		spmGlobalSize = 0
-		f = open('global_variable_size.txt', 'r')
-		for line in f:
-			spmGlobalSize = spmGlobalSize + long(line.split()[1])
-		f.close()
-
-		out.write(prog + "\n")
-		out.write("\tstack size: " + str(minStackSize) + " " + str(maxStackSize) + "\n")
-		out.write("\tcode size: " + str(minCodeSize) + " " + str(maxCodeSize) + "\n")
-		out.write("\tgloal size: " + str(spmGlobalSize) + "\n")
-		out.write("\tminimum SPM space:" + str(minCodeSize + minStackSize) + "\n")
-		out.write("\tmaximum SPM space: " + str(maxCodeSize + maxStackSize) + "\n")
 		out.write("\n")
-
-		# configure caches
-		f = open('configure-cache', 'w')
-		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-cache " + options + " --l1d_size " + str(LGB(dsize+spmStackSize)) + "B --l1i_size " + str(LGB(spmCodeSize)) + "B"
-		f.write(command)
-    		f.close()
-
-    		# size of SPM space for managing any non-stack data
-		spmDataSize = LGB(dsize+spmStackSize) - (dsize + spmStackSize) + LGB(spmCodeSize) - spmCodeSize
-
-
-		# configure SPM
-		f = open('configure-spm', 'w')
-		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-spm " + options + " --stack-size " + str(spmStackSize) + " --data-size " + str(spmDataSize) + " --tile-size " + str(tile_size) + " --num-regions " + str(numRegions) + " --l1d_size "+str(LGB(dsize))+"B"
-		print "\t", command
-		f.write(command)
-	    	f.close()
-
-		command = "chmod +x configure-spm*; chmod +x configure-cache; make clean; smmmake --clean"
 		subprocess.call(command, shell=True)
-
 	    	os.chdir(work_dir)
 	os.chdir(cwd)
 	out.close()
 
-
-
-
-
-
-def configure_data(dsize, tile_size):
-	cwd = os.getcwd()
-	work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
-	os.chdir(work_dir)
-	for prog, options in argv.iteritems():
-		if not os.path.isdir(prog):
-			print prog, "does not exist"
-			continue
-		print prog
-		os.chdir(prog)
-
-		# configure caches
-		f = open('configure-cache', 'w')
-		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-cache " + options + " --l1d_size " + str(dsize+dsize) + "B"
-		f.write(command)
-    		f.close()
-
-    		# size of SPM space for managing any non-stack data
-		spmDataSize = dsize
-
-		# configure SPM
-		f = open('configure-spm', 'w')
-		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-spm " + options + " --data-size " + str(spmDataSize) + " --tile-size " + str(tile_size) + " --l1d_size "+str(LGB(dsize))+"B"
-		print "\t", command
-		f.write(command)
-	    	f.close()
-
-		command = "chmod +x configure-spm*; chmod +x configure-cache; make clean; smmmake --clean"
-		subprocess.call(command, shell=True)
-
-	    	os.chdir(work_dir)
-	os.chdir(cwd)
 
 
 # Get options
 if __name__ == "__main__":
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["dcache-size=", "tile-size=", "stack-size-scale=", "code-size-scale", "data", "original"]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["isram-size=", "dsram-size="]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
-	dsize = 32 * 1024
-	tile_size = 128
 	config = "integrated"
-	ratio = 1.0
-	stack_size_scale = 1.0
-	code_size_scale = 1.0
+	isramSize = 128 * 1024
+	dsramSize = 128 * 1024
 
 	for opt, arg in opts:
 		if opt in ("-h", "--help"):
-			print '--dcache-size --tile_size'
+			print '--isram-size --dsram-size'
 			sys.exit()
-    		elif opt in ("--original"):
-			config = "original"
-    		elif opt in ("--data"):
-			config = "data"
-		elif opt in ("--dcache-size"):
-			dsize = long(arg)
-		elif opt in ("--tile-size"):
-			tile_size = long(arg)
-    		elif opt in ("--ratio"):
-			ratio = long(arg)
-    		elif opt in ("--stack-size-scale"):
-			stack_size_scale = float(arg)
-    		elif opt in ("--code-size-scale"):
-			code_size_scale = float(arg)
+    		elif opt in ("--isram-size"):
+			isramSize = long(arg)
+    		elif opt in ("--dsram-size"):
+			dsramSize = long(arg)
 	if config == "integrated":
-		configure_integrated(ratio)
-	elif config == "original":
-		configure_original(dsize, tile_size, stack_size_scale, code_size_scale)
-    	elif config == "data":
-    		configure_data(dsize, tile_size)
+		configure_integrated(isramSize, dsramSize)
+   

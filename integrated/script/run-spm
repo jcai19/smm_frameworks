@@ -7,18 +7,20 @@ import sys
 
 config = "spm"
 try:
-	opts, args = getopt.getopt(sys.argv[1:], "-h", ["data", "stack", "code"]) 
+	opts, args = getopt.getopt(sys.argv[1:], "-h", ["code", "stack", "global", "cs"]) 
 except getopt.GetoptError as err:
 	print str(err)
 	sys.exit(2)
 for opt, arg in opts:
 	print opt
-	if opt in ("--data"):
-		config = "data"
+	if opt in ("--code"):
+		config = "code"
 	elif opt in ("--stack"):
 		config = "stack"
-	elif opt in ("--code"):
-		config = "code"
+	elif opt in ("--global"):
+		config = "global"
+	elif opt in ("--cs"):
+		config = "cs"
 cwd = os.getcwd()
 work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
 os.chdir(work_dir)
@@ -32,17 +34,19 @@ for path in os.listdir(work_dir):
 #print directories
 
 
-for directory in directories:
+for directory in sorted(directories):
 	os.chdir(directory)
    	print directory
 	if config == "spm":
 		command = "./configure-spm; make clean; make; make eim; ./runme; ./runme_im;"
-	elif config == "data":
-		command = "./configure-spm; make clean; make; make edm; ./runme; ./runme_dm;"
-	elif config == "stack":
-		command = "./configure-spm; make clean; make; make ssm; make esm; ./runme; ./runme_sm;"
 	elif config == "code":
 		command = "./configure-spm; make clean; make; make ecm; ./runme; ./runme_cm;"
+	elif config == "stack":
+		command = "./configure-spm; make clean; make; make ssm; make esm; ./runme; ./runme_sm;"
+	elif config == "global":
+		command = "./configure-spm; make clean; make; make egm; ./runme; ./runme_gm;"
+	elif config == "cs":
+		command = "./configure-spm; make clean; make; make eim-cs; ./runme; ./runme_im;"
 	subprocess.call(command, shell=True)
 	os.chdir(work_dir)
 os.chdir (cwd)

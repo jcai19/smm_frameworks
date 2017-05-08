@@ -56,24 +56,22 @@ def getStats(prog, ws, r):
 
 
 
-startupCost = 291
-transferTimePerByte = 0.24
-
-progInput = [
-	("adpcm.decode",2), 
-	("adpcm.encode",2),
-	("CRC32", 2),
-	("dijkstra",6),
-	("FFT",6),
-	("IFFT",6),
-	("patricia",5),
-	("rijndael.decode",4),
-	("rijndael.encode",5),
-	("sha",8),
-	("stringsearch",3),
-	("susan.corners", 19),
-	("susan.edges", 19),
-	("susan.smoothing", 19),
+programs = [
+	"adpcm.decode", 
+	"adpcm.encode",
+	"basicmath",
+	"CRC32",
+	"dijkstra",
+	"FFT",
+	"IFFT",
+	"patricia",
+	"rijndael.decode",
+	"rijndael.encode",
+	"sha",
+	"stringsearch",
+	"susan.corners",
+	"susan.edges",
+	"susan.smoothing",
 ]
 
 
@@ -109,7 +107,7 @@ if __name__ == "__main__":
 	os.chdir(work_dir)
   
 	r = 2
-	for prog,numFuncs in progInput:
+	for prog in programs:
 		print prog
 		os.chdir(prog)
 		getStats(prog, ws1, r)
