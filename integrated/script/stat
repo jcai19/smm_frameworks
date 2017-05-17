@@ -7,7 +7,29 @@ import sys
 
 
 
-def getIntegratedMnmtStats(prog, ws, r):
+def getIntegratedMnmtStats(prog, ws, r, prefix = ""):
+	f = open('im_sram_config.txt', 'r')
+    	if f.readline().strip() == "instruction cache":
+		isramConfig = 0
+		# disable instruction cache and use the number from caching
+		icacheSize = 0
+	else:
+		isramConfig = 1
+		icacheSize = 0
+	f.readline()
+    	if f.readline().strip() == "data cache":
+		dsramConfig = 0
+		# disable instruction cache and use the number from caching
+		dcacheSize = 0
+	else:
+		dsramConfig = 1
+		dspmSize = long(f.readline().split()[1])
+		dcacheSize = long(f.readline().split()[1])
+		dspmStackSize = long(f.readline().split()[1])
+		dspmGlobalSize = long(f.readline().split()[1])
+	f.close()
+
+
 	#assert (numFuncs >= 2)
     	c = ord('A')
     	ws[chr(c)+str(r)] = prog
@@ -15,6 +37,8 @@ def getIntegratedMnmtStats(prog, ws, r):
 
 	# statistics of caching
 	path = "m5out/cache"
+	if prefix != "":
+		path = prefix + "-" + path
 
 	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
@@ -47,6 +71,8 @@ def getIntegratedMnmtStats(prog, ws, r):
 
 	# statistics of our approach
 	path = "m5out/spm/smmeim"
+	if prefix != "":
+		path = prefix + "-" + path
 
 	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
@@ -56,18 +82,23 @@ def getIntegratedMnmtStats(prog, ws, r):
     	ws[chr(c)+str(r)] = numInsts
 	c = c+1
 
+
 	# the number of instruction cache misses depends on the configuration
-	columnNumIcacheMisses = c
+	if isramConfig == 1:
+		numIcacheMisses = 0
+	ws[chr(c)+str(r)] = numIcacheMisses
+#	columnNumIcacheMisses = c
 	c = c+1
 
-	output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	# use the number of data cache misses from caching if the sram configuration opts to use data cache only
-	#numDcacheMisses = 0
-	if output != "":
-		tempList = output.split()
-		numDcacheMisses = float(tempList[1])
-	#ws[chr(c)+str(r)] = numDcacheMisses
-	columnNumDcacheMisses = c
+	if dsramConfig == 1:
+		output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+		numDcacheMisses = 0
+		if output != "":
+			tempList = output.split()
+			numDcacheMisses = float(tempList[1])
+	ws[chr(c)+str(r)] = numDcacheMisses
+#	columnNumDcacheMisses = c
 	c = c+1
 
 
@@ -120,62 +151,7 @@ def getIntegratedMnmtStats(prog, ws, r):
     	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
 
-	spmExecTime = numInsts + numDMAs*startupCost + DMASize*transferTimePerByte
-
-
-
-
-
-	f = open('im_sram_config.txt', 'r')
-    	if f.readline().strip() == "instruction cache":
-		isramConfig = 0
-		# disable instruction cache and use the number from caching
-		icacheSize = 0
-	else:
-		isramConfig = 1
-		icacheSize = 0
-	f.readline()
-    	if f.readline().strip() == "data cache":
-		dsramConfig = 0
-		# disable instruction cache and use the number from caching
-		dcacheSize = 0
-	else:
-		dsramConfig = 1
-		dspmSize = long(f.readline().split()[1])
-		dcacheSize = long(f.readline().split()[1])
-		dspmStackSize = long(f.readline().split()[1])
-		dspmGlobalSize = long(f.readline().split()[1])
-	f.close()
-
-
-	
-  	# check if code management is done on SPM
-	#print "\t" + chr(columnNumIcacheMisses) + ", " + str(r)
-	t = numIcacheMisses
-    	if isramConfig == 1:
-		t = 0
-    	ws[chr(columnNumIcacheMisses)+str(r)] = t
-	spmExecTime = spmExecTime + t*startupCost
-    	if isramConfig == 1:
-    		print "\tinstruction spm"
-		print "\t\t" + str(t)
-	else:
-		print "\tinstruction cache"
-		print "\t\t" + str(t)
-
-	if dsramConfig == 0:
-		print "\tdata cache"
-		print "\t\t" + str(t)
-	else:
-		print "\tdata spm" + " (cache size = " + str(dcacheSize) + ")"
-		print "\t\t" + str(t)
-	t = 0
-    	t = numDcacheMisses
-    	if dsramConfig == 1 and dcacheSize == 0:
-    		t = 0
-    	ws[chr(columnNumDcacheMisses)+str(r)] = t
-	spmExecTime = spmExecTime + t*startupCost
-	f.close()
+	spmExecTime = numInsts + numDMAs*startupCost + DMASize*transferTimePerByte + (numIcacheMisses+numDcacheMisses)*startupCost
     	ws[chr(c)+str(r)] = spmExecTime
 	c = c+2
 
@@ -209,18 +185,20 @@ programs = [
 
 # Get options
 if __name__ == "__main__":
-
 	config = "integrated"
+	prefix =""
     	output = "experiment.xlsx"
 
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["output=", "global"]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["global", "m5out-prefix=", "output="]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
 	for opt, arg in opts:
 		if opt in ("--output"):
 			output = arg
+		elif opt in ("--m5out-prefix"):
+			prefix = arg
 		elif opt in ("--global"):
 			config = "global";
 
@@ -285,7 +263,7 @@ if __name__ == "__main__":
 	#	command = ""
 	#	print "\t", numFuncs
     		if config == "integrated":
-			getIntegratedMnmtStats(prog, ws1,r)
+			getIntegratedMnmtStats(prog, ws1,r, prefix)
     		elif config == "global":
 			getGlobalMnmtStats(prog, ws1,r)
 	#	print command

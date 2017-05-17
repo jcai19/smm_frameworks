@@ -31,6 +31,73 @@ def GLB(num):
 def LGB(num):
     return long(pow(2, math.ceil(math.log(num, 2))))
 
+def profile():
+	cwd = os.getcwd()
+	work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+	out = open('memory_footprint.txt', 'w')
+	os.chdir(work_dir)
+
+	for pair in argv:
+		prog = pair[0]
+		if not os.path.isdir(prog):
+			print prog, "does not exist"
+			continue
+		print prog
+		os.chdir(prog)
+		command = "smmmake --configure-spm"
+		subprocess.call(command, shell=True)
+		command = "make -s"
+		subprocess.call(command, shell=True)
+		command = "make -s function_size.txt"
+		subprocess.call(command, shell=True)
+		command = "make -s code_size.txt"
+		subprocess.call(command, shell=True)
+
+		command = "make -s stack_frame_size.txt"
+		subprocess.call(command, shell=True)
+		command = "make -s stack_size.txt"
+		subprocess.call(command, shell=True)
+		command = "make -s global_variable_size.txt"
+		subprocess.call(command, shell=True)
+		command = "make clean; smmmake --clean"
+		subprocess.call(command, shell=True)
+		#  Code
+		numFuncs = 0
+		minCodeSize = 0
+		maxCodeSize = 0
+		f = open('function_size.txt', 'r')
+		minCodeSize = long(f.readline().split()[1])
+		maxCodeSize = minCodeSize
+		numFuncs = 1
+		for line in f:
+			numFuncs = numFuncs + 1
+			size = long(line.split()[1])
+	    		maxCodeSize = maxCodeSize + size
+			if size < minCodeSize:
+				minCodeSize = size
+		f.close()
+		# Stack 
+		f = open('stack_size.txt', 'r')
+		minStackSize = long(f.readline().split()[1])
+		maxStackSize = long(f.readline().split()[1])
+		f.close()
+	   	# Global
+		maxGlobalSize = 0
+		f = open('global_variable_size.txt', 'r')
+		for line in f:
+			maxGlobalSize = maxGlobalSize + long(line.split()[1])
+		f.close()
+	
+		out.write(prog + "\n")
+		out.write("\tcode size: " + str(minCodeSize) + " " + str(maxCodeSize) + "\n")
+		out.write("\tnumber of functions: " + str(numFuncs) + "\n")
+		out.write("\tstack size: " + str(minStackSize) + " " + str(maxStackSize) + "\n")
+		out.write("\tgloal size: " + str(maxGlobalSize) + "\n")
+		out.write("\n")
+
+		os.chdir(work_dir)
+	os.chdir(cwd)		
+	out.close()
 
 
 def configure_integrated(isramSize, dsramSize):
@@ -120,22 +187,23 @@ def configure_integrated(isramSize, dsramSize):
 # Get options
 if __name__ == "__main__":
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["isram-size=", "dsram-size="]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["profile", "sram-size="]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
 	config = "integrated"
-	isramSize = 128 * 1024
-	dsramSize = 128 * 1024
+	sramSize = 4 * 1024
 
 	for opt, arg in opts:
 		if opt in ("-h", "--help"):
-			print '--isram-size --dsram-size'
+			print '--profile --sram-size'
 			sys.exit()
-    		elif opt in ("--isram-size"):
-			isramSize = long(arg)
-    		elif opt in ("--dsram-size"):
-			dsramSize = long(arg)
+    		elif opt in ("--profile"):
+			config = "profile"
+    		elif opt in ("--sram-size"):
+			sramSize = long(arg)
 	if config == "integrated":
-		configure_integrated(isramSize, dsramSize)
+		configure_integrated(sramSize, sramSize)
+	elif config == "profile":
+		profile()
    
