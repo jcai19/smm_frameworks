@@ -160,9 +160,13 @@ def getIntegratedMnmtStats(prog, ws, r, prefix = ""):
 	c = c+1
 
 	
+# IBM cell
+#startupCost = 291
+#transferTimePerByte = 0.24
 
-startupCost = 291
-transferTimePerByte = 0.24
+# TI c66x
+startupCost = 180
+transferTimePerByte = 0.000078125
 
 programs = [
 	"adpcm.decode", 
