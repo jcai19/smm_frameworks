@@ -227,7 +227,7 @@ static word  rcon_tab[RC_LENGTH];
 static word  ft_tab[256];
 static word  it_tab[256];
 #elif defined(FOUR_TABLES)
-static word  ft_tab[4][256];
+//static word  ft_tab[4][256];
 static word  it_tab[4][256];
 #endif
 
@@ -319,92 +319,6 @@ static byte FFinv(const byte x)
 #define fwd_affine(x)     (w = (word)x, w ^= (w<<1)^(w<<2)^(w<<3)^(w<<4), 0x63^(byte)(w^(w>>8)))
 
 #define inv_affine(x)     (w = (word)x, w = (w<<1)^(w<<3)^(w<<6), 0x05^(byte)(w^(w>>8)))
-
-static void gen_tabs(void)
-{   word  i, w;
-
-#if defined(FF_TABLES)
-
-    byte  pow[512], log[256];
-
-    /*
-       log and power tables for GF(2^8) finite field with
-       0x011b as modular polynomial - the simplest primitive
-       root is 0x03, used here to generate the tables
-    */
-
-    i = 0; w = 1; 
-    do
-    {   
-        pow[i] = (byte)w;
-        pow[i + 255] = (byte)w;
-        log[w] = (byte)i++;
-        w ^=  (w << 1) ^ (w & ff_hi ? ff_poly : 0);
-    }
-    while (w != 1);
-
-#endif
-
-    for(i = 0, w = 1; i < RC_LENGTH; ++i)
-    {
-        rcon_tab[i] = bytes2word(w, 0, 0, 0);
-        w = (w << 1) ^ (w & ff_hi ? ff_poly : 0);
-    }
-
-    for(i = 0; i < 256; ++i)
-    {   byte    b;
-
-        s_box[i] = b = fwd_affine(FFinv((byte)i));
-
-        w = bytes2word(b, 0, 0, 0);
-#if defined(ONE_LR_TABLE)
-        fl_tab[i] = w;
-#elif defined(FOUR_LR_TABLES)
-        fl_tab[0][i] = w;
-        fl_tab[1][i] = upr(w,1);
-        fl_tab[2][i] = upr(w,2);
-        fl_tab[3][i] = upr(w,3);
-#endif
-        w = bytes2word(FFmul02(b), b, b, FFmul03(b));
-#if defined(ONE_TABLE)
-        ft_tab[i] = w;
-#elif defined(FOUR_TABLES)
-        ft_tab[0][i] = w;
-        ft_tab[1][i] = upr(w,1);
-        ft_tab[2][i] = upr(w,2);
-        ft_tab[3][i] = upr(w,3);
-#endif
-        inv_s_box[i] = b = FFinv(inv_affine((byte)i));
-
-        w = bytes2word(b, 0, 0, 0);
-#if defined(ONE_LR_TABLE)
-        il_tab[i] = w;
-#elif defined(FOUR_LR_TABLES)
-        il_tab[0][i] = w;
-        il_tab[1][i] = upr(w,1);
-        il_tab[2][i] = upr(w,2);
-        il_tab[3][i] = upr(w,3);
-#endif
-        w = bytes2word(FFmul0e(b), FFmul09(b), FFmul0d(b), FFmul0b(b));
-#if defined(ONE_TABLE)
-        it_tab[i] = w;
-#elif defined(FOUR_TABLES)
-        it_tab[0][i] = w;
-        it_tab[1][i] = upr(w,1);
-        it_tab[2][i] = upr(w,2);
-        it_tab[3][i] = upr(w,3);
-#endif
-#if defined(ONE_IM_TABLE)
-        im_tab[b] = w;
-#elif defined(FOUR_IM_TABLES)
-        im_tab[0][b] = w;
-        im_tab[1][b] = upr(w,1);
-        im_tab[2][b] = upr(w,2);
-        im_tab[3][b] = upr(w,3);
-#endif
-
-    }
-}
 
 #endif
 
@@ -614,7 +528,6 @@ cf_dec c_name(set_key)(const byte in_key[], const word n_bytes, const enum aes_k
 #define so(y,x,c)   word_out(y + 4 * c, s(x,c))
 
 #if defined(FOUR_TABLES)
-#define fwd_rnd(y,x,k,c)    s(y,c)= (k)[c] ^ four_tables(x,ft_tab,fwd_var,rf1,c)
 #define inv_rnd(y,x,k,c)    s(y,c)= (k)[c] ^ four_tables(x,it_tab,inv_var,rf1,c)
 #elif defined(ONE_TABLE)
 #define fwd_rnd(y,x,k,c)    s(y,c)= (k)[c] ^ one_table(x,upr,ft_tab,fwd_var,rf1,c)
@@ -705,66 +618,6 @@ cf_dec c_name(set_key)(const byte in_key[], const word n_bytes, const enum aes_k
 
 #endif
 #endif
-
-cf_dec c_name(encrypt)(const byte in_blk[], byte out_blk[], const c_name(aes) *cx)
-{   word        locals(b0, b1);
-    const word  *kp = cx->e_key;
-
-#if !defined(ONE_TABLE) && !defined(FOUR_TABLES)
-    word        f2;
-#endif
-
-    if(!(cx->mode & 0x01)) return aes_bad;
-
-    state_in(b0, in_blk, kp); kp += nc;
-
-#if defined(UNROLL)
-
-    switch(cx->Nrnd)
-    {
-    case 14:    round(fwd_rnd,  b1, b0, kp         ); 
-                round(fwd_rnd,  b0, b1, kp + nc    ); kp += 2 * nc;
-    case 12:    round(fwd_rnd,  b1, b0, kp         ); 
-                round(fwd_rnd,  b0, b1, kp + nc    ); kp += 2 * nc;
-    case 10:    round(fwd_rnd,  b1, b0, kp         );             
-                round(fwd_rnd,  b0, b1, kp +     nc);
-                round(fwd_rnd,  b1, b0, kp + 2 * nc); 
-                round(fwd_rnd,  b0, b1, kp + 3 * nc);
-                round(fwd_rnd,  b1, b0, kp + 4 * nc); 
-                round(fwd_rnd,  b0, b1, kp + 5 * nc);
-                round(fwd_rnd,  b1, b0, kp + 6 * nc); 
-                round(fwd_rnd,  b0, b1, kp + 7 * nc);
-                round(fwd_rnd,  b1, b0, kp + 8 * nc);
-                round(fwd_lrnd, b0, b1, kp + 9 * nc);
-    }
-#elif defined(PARTIAL_UNROLL)
-    {   word    rnd;
-
-        for(rnd = 0; rnd < (cx->Nrnd >> 1) - 1; ++rnd)
-        {
-            round(fwd_rnd, b1, b0, kp); 
-            round(fwd_rnd, b0, b1, kp + nc); kp += 2 * nc;
-        }
-
-        round(fwd_rnd,  b1, b0, kp);
-        round(fwd_lrnd, b0, b1, kp + nc);
-    }
-#else
-    {   word    rnd;
-
-        for(rnd = 0; rnd < cx->Nrnd - 1; ++rnd)
-        {
-            round(fwd_rnd, b1, b0, kp); 
-            l_copy(b0, b1); kp += nc;
-        }
-
-        round(fwd_lrnd, b0, b1, kp);
-    }
-#endif
-
-    state_out(out_blk, b0);
-    return aes_good;
-}
 
 cf_dec c_name(decrypt)(const byte in_blk[], byte out_blk[], const c_name(aes) *cx)
 {   word        locals(b0, b1);

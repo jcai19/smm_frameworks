@@ -35,9 +35,9 @@ for prog, options in argv.iteritems():
 	subprocess.call(command, shell=True)
 	command = "make -s;"
 	subprocess.call(command, shell=True)
-	command = "make -s prof;"
+	command = "make -s function_size.txt;"
 	subprocess.call(command, shell=True)
-	f = open('user_defined_func_size.txt', 'r')
+	f = open('function_size.txt', 'r')
 	minCodeSize = 0
 	midCodeSize = 0
 	maxCodeSize = 0
@@ -77,12 +77,12 @@ for prog, options in argv.iteritems():
 	f.close()
 
 	f = open('configure-cache', 'w')
-	command = "smmmake --clean; smmmake --configure-icache " + options + " --l1i_size " + str(iCacheSize)
+	command = "smmmake --clean; smmmake --configure-cache " + options + " --l1i_size " + str(iCacheSize)
 	print "\t", command
 	f.write(command)
 	f.close()
 
-	command = "chmod +x configure-cache; chmod +x configure-spm; chmod +x configure-spm-min; chmod +x configure-spm-mid; chmod +x configure-spm-max;"
+	command = "chmod +x configure-cache; chmod +x configure-spm*;"
 	subprocess.call(command, shell=True)
 
 	command = "make clean; smmmake --clean;"

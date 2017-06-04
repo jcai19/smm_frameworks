@@ -10,7 +10,7 @@ argv = {
     "basicmath" : "output_small.txt",
     "CRC32" : "output_small.txt",
     "dijkstra" : "output_small.dat",
-#    "patricia" : "output_small.txt",
+    "patricia" : "output_small.txt",
     "FFT" : "output_small.txt",
     "IFFT" : "output_small.inv.txt",
     "rijndael.decode": "output_small.dec",

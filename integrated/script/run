@@ -31,7 +31,7 @@ directories = []
 for path in os.listdir(work_dir):
 	if os.path.isdir(path):
 		directories.append(path)
-#directories = [ 'rijndael.encode']
+#directories = [ 'stringsearch']
 #directories.remove('script')
 #print directories
 
@@ -41,14 +41,14 @@ for directory in sorted(directories):
    	print directory
     	if config == "cache":
 		command = "./configure-cache; make clean; make; ./runme;"
-	if config == "spm":
-		command = "./configure-spm; make clean; make; make eim; ./runme; ./runme_im;"
+	if config == "int":
+		command = "./configure-spm; make clean; make; make eim; ./runme_im;"
 	elif config == "code":
-		command = "./configure-spm; make clean; make; make ecm; ./runme; ./runme_cm;"
+		command = "./configure-spm; make clean; make; make ecm; ./runme_cm;"
 	elif config == "stack":
-		command = "./configure-spm; make clean; make; make ssm; make esm; ./runme; ./runme_sm;"
+		command = "./configure-spm; make clean; make; make esm; ./runme_sm;"
 	elif config == "global":
-		command = "./configure-spm; make clean; make; make egm; ./runme; ./runme_gm;"
+		command = "./configure-spm; make clean; make; make egm; ./runme_gm;"
 	subprocess.call(command, shell=True)
 	os.chdir(work_dir)
 os.chdir (cwd)

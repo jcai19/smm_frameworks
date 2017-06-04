@@ -159,78 +159,6 @@ int encfile(FILE *fin, FILE *fout, aes *ctx, char* fn)
     return 0;
 }
 
-int decfile(FILE *fin, FILE *fout, aes *ctx, char* ifn, char* ofn)
-{   char    inbuf1[16], inbuf2[16], outbuf[16], *bp1, *bp2, *tp;
-    int     i, l, flen;
-
-    if(fread(inbuf1, 1, 16, fin) != 16)  /* read Initialisation Vector   */
-    {
-	printf("Error reading from input file: %s\n", ifn);
-	return 9;
-    }
-
-    i = fread(inbuf2, 1, 16, fin);  /* read 1st encrypted file block    */
-
-    if(i && i != 16)
-    {
-	printf("\nThe input file is corrupt");
-	return -10;
-    }
-
-    decrypt(inbuf2, outbuf, ctx);   /* decrypt it                       */
-
-    for(i = 0; i < 16; ++i)         /* xor with previous input          */
-	outbuf[i] ^= inbuf1[i];
-
-    flen = outbuf[0] & 15;  /* recover length of the last block and set */
-    l = 15;                 /* the count of valid bytes in block to 15  */                              
-    bp1 = inbuf1;           /* set up pointers to two input buffers     */
-    bp2 = inbuf2;
-
-    while(1)
-    {
-	i = fread(bp1, 1, 16, fin);     /* read next encrypted block    */
-	/* to first input buffer        */
-	if(i != 16)         /* no more bytes in input - the decrypted   */
-	    break;          /* partial final buffer needs to be output  */
-
-	/* if a block has been read the previous block must have been   */
-	/* full lnegth so we can now write it out                       */
-
-	if(fwrite(outbuf + 16 - l, 1, l, fout) != (unsigned long)l)
-	{
-	    printf("Error writing to output file: %s\n", ofn);
-	    return -11;
-	}
-
-	decrypt(bp1, outbuf, ctx);  /* decrypt the new input block and  */
-
-	for(i = 0; i < 16; ++i)     /* xor it with previous input block */
-	    outbuf[i] ^= bp2[i];
-
-	/* set byte count to 16 and swap buffer pointers                */
-
-	l = i; tp = bp1, bp1 = bp2, bp2 = tp;
-    }
-
-    /* we have now output 16 * n + 15 bytes of the file with any left   */
-    /* in outbuf waiting to be output. If x bytes remain to be written, */
-    /* we know that (16 * n + x + 15) % 16 = flen, giving x = flen + 1  */
-    /* But we must also remember that the first block is offset by one  */
-    /* in the buffer - we use the fact that l = 15 rather than 16 here  */  
-
-    l = (l == 15 ? 1 : 0); flen += 1 - l;
-
-    if(flen)
-	if(fwrite(outbuf + l, 1, flen, fout) != (unsigned long)flen)
-	{
-	    printf("Error writing to output file: %s\n", ofn);
-	    return -12;
-	}
-
-    return 0;
-}
-
 int main(int argc, char *argv[])
 {   
     FILE    *fin = 0, *fout = 0;
@@ -290,18 +218,11 @@ int main(int argc, char *argv[])
 	err = -6; goto exit;
     }
 
-    if(toupper(*argv[3]) == 'E')
-    {                           /* encryption in Cipher Block Chaining mode */
-	set_key(key, key_len, enc, ctx);
+    /* encryption in Cipher Block Chaining mode */
+    set_key(key, key_len, enc, ctx);
 
-	err = encfile(fin, fout, ctx, argv[1]);
-    }
-    else
-    {                           /* decryption in Cipher Block Chaining mode */
-	set_key(key, key_len, dec, ctx);
-
-	err = decfile(fin, fout, ctx, argv[1], argv[2]);
-    }
+    err = encfile(fin, fout, ctx, argv[1]);
+    
 exit:   
     if(fout) 
 	fclose(fout);

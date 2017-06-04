@@ -4,16 +4,18 @@ import os
 import subprocess
 import sys
 
-reset = 0
+option = 0
 try:
-	opts, args = getopt.getopt(sys.argv[1:], "-h", ["reset"]) 
+	opts, args = getopt.getopt(sys.argv[1:], "-h", ["reset", "purge"]) 
 except getopt.GetoptError as err:
 	print str(err)
 	sys.exit(2)
 for opt, arg in opts:
 	print opt
 	if opt in ("--reset"):
-		reset = 1
+		option = 1
+	if opt in ("--purge"):
+		option = 2
 
 cwd = os.getcwd()
 work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
@@ -28,11 +30,12 @@ print directories
 for directory in directories:
 	os.chdir(directory)
 	print directory
-	if reset == 1:
-#		command = "make clean; smmmake --clean; rm -r m5out; rm function_size.txt code_size.txt stack_frame_size.txt stack_size.txt global_variable_size.txt"
+	if option == 0:
+		command = "make clean; smmmake --clean;"
+	elif option == 1:
 		command = "make clean; smmmake --clean; rm -r m5out; rm im_sram_config.txt"
 	else:
-		command = "make clean; smmmake --clean;"
+		command = "make clean; smmmake --clean; rm -r m5out; rm im_sram_config.txt function_size.txt code_size.txt stack_frame_size.txt stack_size.txt global_variable_size.txt configure-*"
 	subprocess.call(command, shell=True)
 	os.chdir(work_dir)
 os.chdir(cwd)

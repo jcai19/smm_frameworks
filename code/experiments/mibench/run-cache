@@ -29,7 +29,7 @@ for prog,pair in argv.iteritems():
 #	print "\t", numFuncs
 	for i in range(len(iSizes)):
     		idx = str(i+2);
-		command = command + "make clean; smmmake --clean; smmmake --configure-icache "+option+" --l1i_size " + iSizes[i] + "; make; ./runme; mkdir m5out/cache/"+idx+" ; mv m5out/cache/stats.txt m5out/cache/"+idx+"; ";
+		command = command + "make clean; smmmake --clean; smmmake --configure-cache "+option+" --l1i_size " + iSizes[i] + "; make; ./runme; mkdir m5out/cache/"+idx+" ; mv m5out/cache/stats.txt m5out/cache/"+idx+"; ";
 		
 	print command
 	subprocess.call(command, shell=True)

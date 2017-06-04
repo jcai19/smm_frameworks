@@ -95,69 +95,6 @@ void fillrand(char *buf, int len)
     }
 }    
 
-int encfile(FILE *fin, FILE *fout, aes *ctx, char* fn)
-{   char            inbuf[16], outbuf[16];
-    fpos_t          flen;
-    unsigned long   i=0, l=0;
-
-    fillrand(outbuf, 16);           /* set an IV for CBC mode           */
-    fseek(fin, 0, SEEK_END);        /* get the length of the file       */
-    fgetpos(fin, &flen);            /* and then reset to start          */
-    fseek(fin, 0, SEEK_SET);        
-    fwrite(outbuf, 1, 16, fout);    /* write the IV to the output       */
-    fillrand(inbuf, 1);             /* make top 4 bits of a byte random */
-    l = 15;                         /* and store the length of the last */
-    /* block in the lower 4 bits        */
-    inbuf[0] = ((char)flen.__pos & 15) | (inbuf[0] & ~15);
-
-    while(!feof(fin))               /* loop to encrypt the input file   */
-    {                               /* input 1st 16 bytes to buf[1..16] */
-	i = fread(inbuf + 16 - l, 1, l, fin);  /*  on 1st round byte[0] */
-	/* is the length code    */
-	if(i < l) break;            /* if end of the input file reached */
-
-	for(i = 0; i < 16; ++i)         /* xor in previous cipher text  */
-	    inbuf[i] ^= outbuf[i]; 
-
-	encrypt(inbuf, outbuf, ctx);    /* and do the encryption        */
-
-	if(fwrite(outbuf, 1, 16, fout) != 16)
-	{
-	    printf("Error writing to output file: %s\n", fn);
-	    return -7;
-	}
-	/* in all but first round read 16   */
-	l = 16;                     /* bytes into the buffer            */
-    }
-
-    /* except for files of length less than two blocks we now have one  */
-    /* byte from the previous block and 'i' bytes from the current one  */
-    /* to encrypt and 15 - i empty buffer positions. For files of less  */
-    /* than two blocks (0 or 1) we have i + 1 bytes and 14 - i empty    */
-    /* buffer position to set to zero since the 'count' byte is extra   */
-
-    if(l == 15)                         /* adjust for extra byte in the */
-	++i;                            /* in the first block           */
-
-    if(i)                               /* if bytes remain to be output */
-    {
-	while(i < 16)                   /* clear empty buffer positions */
-	    inbuf[i++] = 0;
-
-	for(i = 0; i < 16; ++i)         /* xor in previous cipher text  */
-	    inbuf[i] ^= outbuf[i]; 
-
-	encrypt(inbuf, outbuf, ctx);    /* encrypt and output it        */
-
-	if(fwrite(outbuf, 1, 16, fout) != 16)
-	{
-	    printf("Error writing to output file: %s\n", fn);
-	    return -8;
-	}
-    }
-
-    return 0;
-}
 
 int decfile(FILE *fin, FILE *fout, aes *ctx, char* ifn, char* ofn)
 {   char    inbuf1[16], inbuf2[16], outbuf[16], *bp1, *bp2, *tp;
@@ -289,13 +226,6 @@ int main(int argc, char *argv[])
 	err = -6; goto exit;
     }
 
-    if(toupper(*argv[3]) == 'E')
-    {                           /* encryption in Cipher Block Chaining mode */
-	set_key(key, key_len, enc, ctx);
-
-	err = encfile(fin, fout, ctx, argv[1]);
-    }
-    else
     {                           /* decryption in Cipher Block Chaining mode */
 	set_key(key, key_len, dec, ctx);
 

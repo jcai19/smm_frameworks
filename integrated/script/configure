@@ -11,11 +11,13 @@ argv = [
     	("adpcm.decode", "--input data/small.adpcm --output output_small.pcm"),
 	("adpcm.encode", "--input data/small.pcm --output output_small.adpcm"),
 	("basicmath", "--output output_small.txt"),
+#	("bitcount", "--args 75000 --output output_small.txt"),
 	("CRC32", "--args data/small.pcm --output output_small.txt"),
 	("dijkstra", "--args input.dat --output output_small.dat"),
 	("FFT", "--args \"4 4096\" --output output_small.txt"),
 	("IFFT", "--args \"4 8192 -i\" --output output_small.inv.txt"),
 	("patricia", "--args small.udp --output output_small.txt"),
+#	("qsort", "--args input_small.dat --output output_small.txt"),
 	("rijndael.decode", "--args \"input_small.enc output_small.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\""),
 	("rijndael.encode", "--args \"input_small.asc output_small.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\""),
 	("sha", "--args \"input_small.asc\" --output output_small.txt"),
@@ -23,6 +25,24 @@ argv = [
 	("susan.corners", "--args \"input_small.pgm output_small.corners.pgm -c\""),
 	("susan.edges", "--args \"input_small.pgm output_small.edges.pgm -e\""),
 	("susan.smoothing", "--args \"input_small.pgm output_small.smoothing.pgm -s\""),
+]
+
+argv_large = [
+    	("adpcm.decode", "--input data/large.adpcm --output large.pcm"),
+	("adpcm.encode", "--input data/large.pcm --output output_large.adpcm"),
+	("basicmath", "--output output_large.txt"), # need a different main
+	("CRC32", "--args data/large.pcm --output output_large.txt"),
+	("dijkstra", "--args input.dat --output output-large.dat"), # need a different main
+	("FFT", "--args \"8 32768\" --output output_large.txt"),
+	("IFFT", "--args \"8 32768 -i\" --output output_large.inv.txt"),
+	("patricia", "--args large.udp --output output_large.txt"),
+	("rijndael.decode", "--args \"input_large.enc output_large.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\""),
+	("rijndael.encode", "--args \"input_large.asc output_large.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\""),
+	("sha", "--args \"input_large.asc\" --output output_large.txt"),
+	("stringsearch", "--output output_large.txt"), # need a different main
+	("susan.corners", "--args \"input_large.pgm output_large.corners.pgm -c\""),
+	("susan.edges", "--args \"input_large.pgm output_large.edges.pgm -e\""),
+	("susan.smoothing", "--args \"input_large.pgm output_large.smoothing.pgm -s\""),
 ]
 
 def GLB(num):
@@ -44,37 +64,41 @@ def profile():
 			continue
 		print prog
 		os.chdir(prog)
-		command = "smmmake --configure-spm"
-		subprocess.call(command, shell=True)
-		command = "make -s"
-		subprocess.call(command, shell=True)
-		command = "make -s function_size.txt"
-		subprocess.call(command, shell=True)
-		command = "make -s code_size.txt"
-		subprocess.call(command, shell=True)
-
-		command = "make -s stack_frame_size.txt"
-		subprocess.call(command, shell=True)
-		command = "make -s stack_size.txt"
-		subprocess.call(command, shell=True)
-		command = "make -s global_variable_size.txt"
-		subprocess.call(command, shell=True)
-		command = "make clean; smmmake --clean"
+		command = ""
+		command = command + "smmmake --configure-hybrid; "
+#		subprocess.call(command, shell=True)
+		command = command + "make -s; "
+#		subprocess.call(command, shell=True)
+		command = command + "make -s function_size.txt; "
+#		subprocess.call(command, shell=True)
+		command = command + "make -s code_size.txt; "
+#		subprocess.call(command, shell=True)
+		command = command + "make -s stack_frame_size.txt; "
+#		subprocess.call(command, shell=True)
+		command = command + "make -s stack_size.txt; "
+#		subprocess.call(command, shell=True)
+		command = command + "make -s global_variable_size.txt; "
+#		subprocess.call(command, shell=True)
+		command = command + "make clean; smmmake --clean; "
 		subprocess.call(command, shell=True)
 		#  Code
 		numFuncs = 0
 		minCodeSize = 0
 		maxCodeSize = 0
-		f = open('function_size.txt', 'r')
+#		f = open('function_size.txt', 'r')
+#		minCodeSize = long(f.readline().split()[1])
+#		maxCodeSize = minCodeSize
+#		numFuncs = 1
+#		for line in f:
+#			numFuncs = numFuncs + 1
+#			size = long(line.split()[1])
+#	    		maxCodeSize = maxCodeSize + size
+#			if size < minCodeSize:
+#				minCodeSize = size
+#		f.close()
+		f = open('code_size.txt', 'r')
 		minCodeSize = long(f.readline().split()[1])
-		maxCodeSize = minCodeSize
-		numFuncs = 1
-		for line in f:
-			numFuncs = numFuncs + 1
-			size = long(line.split()[1])
-	    		maxCodeSize = maxCodeSize + size
-			if size < minCodeSize:
-				minCodeSize = size
+		maxCodeSize = long(f.readline().split()[1])
 		f.close()
 		# Stack 
 		f = open('stack_size.txt', 'r')
@@ -89,9 +113,9 @@ def profile():
 		f.close()
 	
 		out.write(prog + "\n")
-		out.write("\tcode size: " + str(minCodeSize) + " " + str(maxCodeSize) + "\n")
+		out.write("\tSPM space for code management: " + str(minCodeSize) + " " + str(maxCodeSize) + "\n")
 		out.write("\tnumber of functions: " + str(numFuncs) + "\n")
-		out.write("\tstack size: " + str(minStackSize) + " " + str(maxStackSize) + "\n")
+		out.write("\tSPM space for stack management: " + str(minStackSize) + " " + str(maxStackSize) + "\n")
 		out.write("\tgloal size: " + str(maxGlobalSize) + "\n")
 		out.write("\n")
 
@@ -115,9 +139,10 @@ def configure_integrated(isramSize, dsramSize):
 		os.chdir(prog)
 		out.write('{:20s}'.format(prog));
 
-		command = "smmmake --configure-spm --isram-size " + str(isramSize) + " --dsram-size " + str(dsramSize) 
-		subprocess.call(command, shell=True)
-		command = "make im_sram_config.txt" 
+		command = ""
+		command = command + "smmmake --configure-hybrid --isram-size " + str(isramSize) + " --dsram-size " + str(dsramSize) + "; "
+#		subprocess.call(command, shell=True)
+		command = command + "make im_sram_config.txt; " 
 		subprocess.call(command, shell=True)
     		icacheSize = 0
     		dcacheSize = 0
@@ -159,23 +184,23 @@ def configure_integrated(isramSize, dsramSize):
 			out.write("\tstack " + str(dspmStackSize)  + "(" +str(maxStackSize)+")")
 			out.write("\tglobal " + str(dspmGlobalSize))
 		f.close()
-    		command = "make clean; smmmake --clean" 
-		subprocess.call(command, shell=True)
+#    		command = "make clean; smmmake --clean" 
+#		subprocess.call(command, shell=True)
 		# configure caches
 		f = open('configure-cache', 'w')
 		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-cache " + options + " --l1i_size " + str(isramSize) + "B --l1d_size " + str(dsramSize) + "B"
+		command = command + "smmmake --clean; smmmake --configure-cache " + options + " --cpu_clock 1.2GHz --l1i_size " + str(isramSize) + "B --l1d_size " + str(dsramSize) + "B"
 		f.write(command)
     		f.close()
 		# configure SPM
 		f = open('configure-spm', 'w')
 		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-spm " + options + " --l1i_size " + str(icacheSize) + "B --l1d_size " + str(dcacheSize) + "B" + " --isram-size " + str(isramSize) + " --isram-config " + str(isramConfig) + " --dsram-size " + str(dsramSize) + " --dsram-config " + str(dsramConfig) + " --stack-size " + str(dspmStackSize) + " --global-size " + str(dspmGlobalSize) 
+		command = command + "smmmake --clean; smmmake --configure-hybrid " + options + " --cpu_clock 1.2GHz --l1i_size " + str(icacheSize) + "B --l1d_size " + str(dcacheSize) + "B" + " --isram-size " + str(isramSize) + " --isram-config " + str(isramConfig) + " --dsram-size " + str(dsramSize) + " --dsram-config " + str(dsramConfig) + " --stack-size " + str(dspmStackSize) + " --global-size " + str(dspmGlobalSize) 
 
 		print "\t", command
 		f.write(command)
 	    	f.close()
-		command = "chmod +x configure-spm*; chmod +x configure-cache; make clean; smmmake --clean"
+		command = "make clean; smmmake --clean; chmod +x configure-spm*; chmod +x configure-cache; "
 		out.write("\n")
 		subprocess.call(command, shell=True)
 	    	os.chdir(work_dir)
@@ -184,15 +209,73 @@ def configure_integrated(isramSize, dsramSize):
 
 
 
-# Get options
+def configure_separate():
+	cwd = os.getcwd()
+	work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
+	out = open('indepedent_management_sram_size.txt', 'w')
+	out.write('{:20s}'.format("benchmark"));
+	out.write('{:20s}'.format("isramSize"));
+	out.write('{:20s}'.format("dsramSize"));
+	out.write("\n")
+	os.chdir(work_dir)
+	for pair in argv:
+		prog = pair[0]
+		options = pair[1]
+		if not os.path.isdir(prog):
+			print prog, "does not exist"
+			continue
+		print prog
+		os.chdir(prog)
+
+    		f = open('code_size.txt', 'r')
+		minCodeSize = long(f.readline().split()[1])
+ 		maxCodeSize = long(f.readline().split()[1])
+		f.close()
+    		isramSize = LGB(minCodeSize)
+
+    		f = open('stack_size.txt', 'r')
+		minStackSize = long(f.readline().split()[1])
+ 		maxStackSize = long(f.readline().split()[1])
+		f.close()
+    		dsramSize = LGB(long(math.ceil( (minStackSize+maxStackSize) / 2 )))
+    		print "\t", minCodeSize, "\t", isramSize
+
+		# configure caches
+		f = open('configure-cache', 'w')
+		command = "#!/bin/sh\n"
+		command = command + "smmmake --clean; smmmake --configure-cache " + options + " --cpu_clock 1.2GHz --l1i_size " + str(isramSize) + "B --l1d_size " + str(dsramSize) +"B"
+		f.write(command)
+    		f.close()
+		# configure SPM
+		f = open('configure-spm', 'w')
+		command = "#!/bin/sh\n"
+		command = command + "smmmake --clean; smmmake --configure-hybrid " + options + " --cpu_clock 1.2GHz --isram-size " + str(isramSize) + " --stack-size " + str(dsramSize) 
+
+		print "\t", command
+		f.write(command)
+	    	f.close()
+		command = "make clean; smmmake --clean; chmod +x configure-spm*; chmod +x configure-cache; "
+		subprocess.call(command, shell=True)
+
+		out.write('{:20s}'.format(prog));
+		out.write('{:20s}'.format(str(isramSize)));
+		out.write('{:20s}'.format(str(dsramSize)));
+		out.write("\n")
+	    	os.chdir(work_dir)
+	os.chdir(cwd)
+    	out.close()
+
+
+
+
 if __name__ == "__main__":
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["profile", "sram-size="]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["profile", "sram-size=", "separate"]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
 	config = "integrated"
-	sramSize = 4 * 1024
+	sramSize = 1024
 
 	for opt, arg in opts:
 		if opt in ("-h", "--help"):
@@ -200,10 +283,14 @@ if __name__ == "__main__":
 			sys.exit()
     		elif opt in ("--profile"):
 			config = "profile"
+    		elif opt in ("--separate"):
+			config = "separate"
     		elif opt in ("--sram-size"):
 			sramSize = long(arg)
 	if config == "integrated":
 		configure_integrated(sramSize, sramSize)
 	elif config == "profile":
 		profile()
+	elif config == "separate":
+		configure_separate()
    

@@ -5,7 +5,15 @@ import os
 import subprocess
 import sys
 
-
+def getCacheSimInsts():
+	path = "cache-siminst/cache"
+	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	if len(tempList) == 0:
+    		return
+	numInsts = float(tempList[1])
+    	return numInsts
+ 
 
 def getIntegratedMnmtStats(prog, ws, r, prefix = ""):
 	f = open('im_sram_config.txt', 'r')
@@ -36,17 +44,13 @@ def getIntegratedMnmtStats(prog, ws, r, prefix = ""):
 	c = c+1
 
 	# statistics of caching
+	numInsts = getCacheSimInsts()
+    	ws[chr(c)+str(r)] = numInsts
+	c = c+1
+
 	path = "m5out/cache"
 	if prefix != "":
 		path = prefix + "-" + path
-
-	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
-	tempList = output.split()
-    	if len(tempList) == 0:
-    		return
-	numInsts = float(tempList[1])
-    	ws[chr(c)+str(r)] = numInsts
-	c = c+1
 
 	output = subprocess.Popen("grep system.cpu.icache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
@@ -57,12 +61,30 @@ def getIntegratedMnmtStats(prog, ws, r, prefix = ""):
     	ws[chr(c)+str(r)] = numIcacheMisses
 	c = c+1
 
+	output = subprocess.Popen("grep system.cpu.icache.overall_miss_rate::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	icacheMissRate = 0
+	if output != "":
+		tempList = output.split()
+		icacheMissRate = float(tempList[1])
+    	ws[chr(c)+str(r)] = icacheMissRate
+	c = c+1
+
 	output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	numDcacheMisses = 0
 	if output != "":
 		tempList = output.split()
 		numDcacheMisses = float(tempList[1])
     	ws[chr(c)+str(r)] = numDcacheMisses
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.dcache.overall_miss_rate::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	dcacheMissRate = 0
+	if output != "":
+		tempList = output.split()
+		dcacheMissRate = float(tempList[1])
+    	ws[chr(c)+str(r)] = dcacheMissRate
 	c = c+1
 
 	cacheExecTime = numInsts + (numDcacheMisses + numIcacheMisses) * startupCost
@@ -159,6 +181,262 @@ def getIntegratedMnmtStats(prog, ws, r, prefix = ""):
 	ws[chr(c)+str(r)] = float(spmExecTime)/float(cacheExecTime)
 	c = c+1
 
+
+def getCodeMnmtStats(prog, ws, r, prefix = ""):
+
+	#assert (numFuncs >= 2)
+    	c = ord('A')
+    	ws[chr(c)+str(r)] = prog
+	c = c+1
+
+	# statistics of caching
+	numInsts = getCacheSimInsts()
+    	ws[chr(c)+str(r)] = numInsts
+	c = c+1
+
+	path = "m5out/cache"
+	if prefix != "":
+		path = prefix + "-" + path
+
+	output = subprocess.Popen("grep system.cpu.icache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	numIcacheMisses = 0
+	if output != "":
+		tempList = output.split()
+		numIcacheMisses = float(tempList[1])
+    	ws[chr(c)+str(r)] = numIcacheMisses
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.icache.overall_miss_rate::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	icacheMissRate = 0
+	if output != "":
+		tempList = output.split()
+		icacheMissRate = float(tempList[1])
+    	ws[chr(c)+str(r)] = icacheMissRate
+	c = c+1
+
+	numDcacheMisses = 0
+    	ws[chr(c)+str(r)] = numDcacheMisses
+	c = c+1
+
+	dcacheMissRate = 0
+    	ws[chr(c)+str(r)] = dcacheMissRate
+	c = c+1
+
+
+	cacheExecTime = numInsts + (numIcacheMisses) * startupCost
+    	ws[chr(c)+str(r)] = cacheExecTime
+	c = c+2
+
+	# statistics of our approach
+	path = "m5out/spm/smmecm"
+	if prefix != "":
+		path = prefix + "-" + path
+
+	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	if len(tempList) == 0:
+    		return
+	numInsts = float(tempList[1])
+    	ws[chr(c)+str(r)] = numInsts
+	c = c+1
+
+
+	# the number of instruction cache misses depends on the configuration
+	ws[chr(c)+str(r)] = 0
+	c = c+1
+
+	# use the number of data cache misses from caching if the sram configuration opts to use data cache only
+	ws[chr(c)+str(r)] = 0
+#	columnNumDcacheMisses = c
+	c = c+1
+
+
+	output = subprocess.Popen("grep num_dmacalls "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	numDMAs = float(tempList[1])
+    	ws[chr(c)+str(r)] = numDMAs
+	c = c+1
+
+	output = subprocess.Popen("grep bytes_transferred_dma "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	DMASize = float(tempList[1])
+    	ws[chr(c)+str(r)] = DMASize
+	c = c+1
+
+
+	# number of management calls
+	output = subprocess.Popen("grep system.cpu.num_func_calls_cget "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_ccall "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_sstore "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_sload "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_l2g "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+	output = subprocess.Popen("grep system.cpu.num_func_calls_g2l "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_ptr_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	spmExecTime = numInsts + numDMAs*startupCost + DMASize*transferTimePerByte
+    	ws[chr(c)+str(r)] = spmExecTime
+	c = c+2
+
+	# normalized execution time
+	ws[chr(c)+str(r)] = float(spmExecTime)/float(cacheExecTime)
+	c = c+1
+
+
+def getStackMnmtStats(prog, ws, r, prefix = ""):
+	#assert (numFuncs >= 2)
+    	c = ord('A')
+    	ws[chr(c)+str(r)] = prog
+	c = c+1
+
+	# statistics of caching
+	numInsts = getCacheSimInsts()
+    	ws[chr(c)+str(r)] = numInsts
+	c = c+1
+
+	path = "m5out/cache"
+	if prefix != "":
+		path = prefix + "-" + path
+
+	numIcacheMisses = 0
+    	ws[chr(c)+str(r)] = numIcacheMisses
+	c = c+1
+
+	icacheMissRate = 0
+    	ws[chr(c)+str(r)] = icacheMissRate
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.dcache.overall_misses::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	numDcacheMisses = 0
+	if output != "":
+		tempList = output.split()
+		numDcacheMisses = float(tempList[1])
+    	ws[chr(c)+str(r)] = numDcacheMisses
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.dcache.overall_miss_rate::total "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	dcacheMissRate = 0
+	if output != "":
+		tempList = output.split()
+		dcacheMissRate = float(tempList[1])
+    	ws[chr(c)+str(r)] = dcacheMissRate
+	c = c+1
+
+	cacheExecTime = numInsts + (numDcacheMisses) * startupCost
+    	ws[chr(c)+str(r)] = cacheExecTime
+	c = c+2
+
+	# statistics of our approach
+	path = "m5out/spm/smmesm"
+	if prefix != "":
+		path = prefix + "-" + path
+
+	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	if len(tempList) == 0:
+    		return
+	numInsts = float(tempList[1])
+    	ws[chr(c)+str(r)] = numInsts
+	c = c+1
+
+
+	# the number of instruction cache misses depends on the configuration
+	ws[chr(c)+str(r)] = 0
+	c = c+1
+
+	# use the number of data cache misses from caching if the sram configuration opts to use data cache only
+	ws[chr(c)+str(r)] = 0
+	c = c+1
+
+
+	output = subprocess.Popen("grep num_dmacalls "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	numDMAs = float(tempList[1])
+    	ws[chr(c)+str(r)] = numDMAs
+	c = c+1
+
+	output = subprocess.Popen("grep bytes_transferred_dma "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+	DMASize = float(tempList[1])
+    	ws[chr(c)+str(r)] = DMASize
+	c = c+1
+
+
+	# number of management calls
+	output = subprocess.Popen("grep system.cpu.num_func_calls_cget "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_ccall "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_sstore "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_sload "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_l2g "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+	output = subprocess.Popen("grep system.cpu.num_func_calls_g2l "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	output = subprocess.Popen("grep system.cpu.num_func_calls_ptr_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	tempList = output.split()
+    	ws[chr(c)+str(r)] = float(tempList[1])
+	c = c+1
+
+	spmExecTime = numInsts + numDMAs*startupCost + DMASize*transferTimePerByte
+    	ws[chr(c)+str(r)] = spmExecTime
+	c = c+2
+
+	# normalized execution time
+	ws[chr(c)+str(r)] = float(spmExecTime)/float(cacheExecTime)
+	c = c+1
+
+
 	
 # IBM cell
 #startupCost = 291
@@ -189,12 +467,12 @@ programs = [
 
 # Get options
 if __name__ == "__main__":
-	config = "integrated"
+	option = "integrated"
 	prefix =""
     	output = "experiment.xlsx"
 
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["global", "m5out-prefix=", "output="]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["code", "stack", "m5out-prefix=", "output="]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
@@ -203,8 +481,10 @@ if __name__ == "__main__":
 			output = arg
 		elif opt in ("--m5out-prefix"):
 			prefix = arg
-		elif opt in ("--global"):
-			config = "global";
+		elif opt in ("--code"):
+			option = "code";
+		elif opt in ("--stack"):
+			option = "stack";
 
 
 
@@ -221,7 +501,11 @@ if __name__ == "__main__":
 	c = c+1
 	ws1[chr(c)+str(r)] = "#imisses"
 	c = c+1
+	ws1[chr(c)+str(r)] = "imiss rate"
+	c = c+1
 	ws1[chr(c)+str(r)] = "#dmisses"
+	c = c+1
+	ws1[chr(c)+str(r)] = "dmiss rate"
 	c = c+1
 	ws1[chr(c)+str(r)] = "time"
 	c = c+2
@@ -266,10 +550,12 @@ if __name__ == "__main__":
 		os.chdir(prog)
 	#	command = ""
 	#	print "\t", numFuncs
-    		if config == "integrated":
+    		if option == "integrated":
 			getIntegratedMnmtStats(prog, ws1,r, prefix)
-    		elif config == "global":
-			getGlobalMnmtStats(prog, ws1,r)
+    		elif option == "code":
+			getCodeMnmtStats(prog, ws1,r, prefix)
+    		elif option == "stack":
+			getStackMnmtStats(prog, ws1,r, prefix)
 	#	print command
 	#	subprocess.call(command, shell=True)
 		r = r+1
