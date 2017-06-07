@@ -67,8 +67,8 @@ map.txt: $(PROGRAM) function_size.txt
 cm: basic_$(PROGRAM).bc dma.bc code_manager.bc map.txt 
 	llvm-link -o temp_$(PROGRAM).bc dma.bc code_manager.bc basic_$(PROGRAM).bc
 	# Insert code management functions
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm -map map.txt --debug-only=smmcm < temp_$(PROGRAM).bc > $@_$(PRO
-	GRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm -map map.txt --debug-only=smmcm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -77,7 +77,8 @@ cm: basic_$(PROGRAM).bc dma.bc code_manager.bc map.txt
 ecm: basic_$(PROGRAM).bc dma.bc code_manager.bc map.txt
 	llvm-link -o temp_$(PROGRAM).bc dma.bc code_manager.bc basic_$(PROGRAM).bc
 	# Insert code management functions based on code overlay scheme
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt --debug-only=smmecm < temp_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt --debug-only=smmecm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -114,28 +115,25 @@ stack_size.txt: $(PROGRAM) stack_frame_size.txt
 	opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -estimate-size -stack-frame-size stack_frame_size.txt < $(PROGRAM).bc > /dev/null 2> stack_size.txt 
 	
 
-#sm_cost.txt: $(PROGRAM) stack_frame_size.txt 
-#	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so --estimate-cost -stack-frame-size stack_frame_size.txt -output-cost sm_cost.txt < $(PROGRAM).bc > /dev/null
-
 sm: basic_$(PROGRAM).bc dma.bc stack_manager.bc
 	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
 	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSM.so -smmsm --debug-only=smmssm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-epilog -code 1 -global 0 --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
-	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
+	objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 	-rm temp*_$(PROGRAM).bc
 
 
 ssm: basic_$(PROGRAM).bc dma.bc stack_manager.bc stack_frame_size.txt
 	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmssm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmssm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt --debug-only=smmssm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
 	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
-	#llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
+	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
+	objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 	-rm temp*_$(PROGRAM).bc
 
 
@@ -146,55 +144,19 @@ esm: basic_$(PROGRAM).bc dma.bc stack_manager.bc stack_frame_size.txt
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
+	objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 	-rm temp*_$(PROGRAM).bc
 
-
-# Global
-gm_mem_config.txt: $(PROGRAM)
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMGMH.so -estimate-accesses ${global_size_constraint} -output gm_mem_config.txt --debug-only=smmim < $(PROGRAM).bc > /dev/null
+# Global 
 
 global_variable_size.txt: $(PROGRAM)
 	# Get the size of global variables
 	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMGMH.so -estimate-size < $(PROGRAM).bc > /dev/null 2> global_variable_size.txt
 
-egm-spm: basic_$(PROGRAM).bc dma.bc spm_heap_allocator.bc
-	llvm-link -o temp_$(PROGRAM).bc dma.bc basic_$(PROGRAM).bc spm_heap_allocator.bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMEGM.so -smmegm ${global_size_constraint} -debug-only=smmegm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp1_$(PROGRAM).bc > egm_$(PROGRAM).bc
-	llvm-dis < egm_$(PROGRAM).bc > egm_$(PROGRAM).ll
-	llc $(OPTLVL) -o egm_$(PROGRAM).s egm_$(PROGRAM).bc 
-	$(CC) -o egm_$(PROGRAM) egm_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d egm_$(PROGRAM) > egm_$(PROGRAM).dis
-	-rm temp*_$(PROGRAM).bc
-
-egm-cache: basic_$(PROGRAM).bc
-	llvm-link -o temp_$(PROGRAM).bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smmim < temp_$(PROGRAM).bc > egm_$(PROGRAM).bc
-	llvm-dis < egm_$(PROGRAM).bc > egm_$(PROGRAM).ll
-	llc -O3 -o egm_$(PROGRAM).s egm_$(PROGRAM).bc 
-	$(CC) -o egm_$(PROGRAM) egm_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d egm_$(PROGRAM) > egm_$(PROGRAM).dis
-	rm temp*_$(PROGRAM).bc
-
-egm:
-	${gm_mem_config}
-
 
 # Integrated 
-im_sram_config.txt: $(PROGRAM)
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMIMH.so -estimate-accesses ${code_size_constraint} -code-size code_size.txt ${data_size_constraint} -stack-size stack_size.txt -output im_sram_config.txt --debug-only=smmim < $(PROGRAM).bc > /dev/null
-
-eim-cs: basic_$(PROGRAM).bc dma.bc stack_manager.bc  code_manager.bc map.txt
-	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc code_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt < temp1_$(PROGRAM).bc > temp2_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp2_$(PROGRAM).bc > eim_$(PROGRAM).bc
-	llvm-dis < eim_$(PROGRAM).bc > eim_$(PROGRAM).ll
-	llc -O3 -o eim_$(PROGRAM).s eim_$(PROGRAM).bc 
-	$(CC) -o eim_$(PROGRAM) eim_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
-	#objdump -d eim_$(PROGRAM) > eim_$(PROGRAM).dis
-	rm temp*_$(PROGRAM).bc
+im_sram_config.txt: $(PROGRAM) stack_frame_size.txt
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMIMH.so -estimate-accesses ${code_size_constraint} -code-size code_size.txt -stack-frame-size stack_frame_size.txt ${data_size_constraint} -stack-size stack_size.txt -output im_sram_config.txt --debug-only=smmim < $(PROGRAM).bc > /dev/null
 
 ${integrated_mnmt}
 
@@ -207,6 +169,7 @@ code_manager.bc:$(SMMDIR)/code/lib/code_manager.c
 
 stack_manager.bc:$(SMMDIR)/stack/lib/stack_manager.c
 	$(CC) -I$(SMMDIR)/common/include -I$(SMMDIR)/stack/include -include stack_manager.h $(CFLAGS) -emit-llvm -c $< -o $@
+
 
 spm_heap_allocator.bc:$(SMMDIR)/heap/lib/spm_heap_allocator.c
 	$(CC) -I$(SMMDIR)/common/include -I$(SMMDIR)/heap/include -include spm_heap_allocator.h $(CFLAGS) -emit-llvm -c $< -o $@
@@ -276,9 +239,10 @@ clean:
 					counter = counter + 1
 					integratedMnmt = integratedMnmt + "\topt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt < temp"+str(counter)+"_$(PROGRAM).bc > temp" + str(counter+1) + "_$(PROGRAM).bc\n"
 					counter = counter + 1
-				# epilog
+				# epilog (if dramConfig == 0 then number of dcache misses from caching are used)
 				integratedMnmt = integratedMnmt + "\topt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp" + str(counter) + "_$(PROGRAM).bc > eim_$(PROGRAM).bc\n"
 			else:
+				# if isramConfig ==0 and dramConfig == 0, then number of dcache misses from caching are used)
 				integratedMnmt = integratedMnmt + "\n"
 				integratedMnmt = integratedMnmt + "\tllvm-link -o temp_$(PROGRAM).bc basic_$(PROGRAM).bc\n"
 				integratedMnmt = integratedMnmt + "\topt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp_$(PROGRAM).bc > eim_$(PROGRAM).bc\n"
@@ -467,13 +431,13 @@ def create_linkerscript_spm(map_file = ""):
 				line = implicit_linker_script[i]
 			break;
 
-def create_runme_smm(arguments="", infile = "", outfile="", cpuClock = "1.2GHz"):
+def create_runme_mem(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", cpuMode = "atomic"):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme")):
 		with open("runme", "w") as f:
 			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock=" + cpuClock + " -c " + program
+			text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/mem $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c " + program
 			if (arguments != ""):
 				text = text + " -o \"" + arguments + "\""
 			if (infile!= ""):
@@ -487,14 +451,14 @@ def create_runme_smm(arguments="", infile = "", outfile="", cpuClock = "1.2GHz")
 
 
 # Create the runme file for integrated management
-def create_runme_smmint(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", l1iSize = "0B", l1dSize = "0B", cachelineSize = "32"):
+def create_runme_smmint(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", cpuMode = "atomic", l1iSize = "0B", l1dSize = "0B", cachelineSize = "32"):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme_im")):
 		with open("runme_im", "w") as f:
 			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			im_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmim $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock=" + cpuClock +" -c im_" + program
-			eim_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmeim $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock=" + cpuClock +" -c eim_" + program
+			im_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmim $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock +" -c im_" + program
+			eim_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmeim $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock +" -c eim_" + program
 			if (arguments != ""):
 				im_text = im_text + " -o \"" + arguments.replace("output", "im_output", 1) + "\""
 				eim_text = eim_text + " -o \"" + arguments.replace("output", "eim_output", 1) + "\""
@@ -519,7 +483,7 @@ def create_runme_smmint(arguments="", infile = "", outfile="", cpuClock = "1.2GH
 	if (not os.path.isfile("runme_sm_prof")):
 		with open("runme_sm_prof", "w") as f:
 			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			text = "$SIMDIR/build/X86/gem5.debug -q -r -e --stderr-file=simerr -d m5out/smm $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock=" + cpuClock + " -c " + program
+			text = "$SIMDIR/build/X86/gem5.debug -q -r -e --stderr-file=simerr -d m5out/smm $SIMDIR/configs/example/se.py --cpu-type="+cpuMode+" --cpu-clock=" + cpuClock + " -c " + program
 			if (arguments != ""):
 				text = text + " -o \"" + arguments + "\""
 			if (infile!= ""):
@@ -531,61 +495,68 @@ def create_runme_smmint(arguments="", infile = "", outfile="", cpuClock = "1.2GH
     		subprocess.Popen("chmod +x runme_sm_prof", stdout=subprocess.PIPE, shell=True)
 
 # Create the runme file for code management
-def create_runme_smmcode(arguments="", infile = "", outfile="", cpuClock = "1.2GHz"):
+def create_runme_smmcode(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", cpuMode = "atomic"):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme_cm")):
+		prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
+		cm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmcm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c cm_" + program
+		ecm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmecm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c ecm_" + program
+		if (arguments != ""):
+			cm_text = cm_text + " -o \"" + arguments.replace("output", "cm_output", 1) + "\""
+			ecm_text = ecm_text + " -o \"" + arguments.replace("output", "ecm_output", 1) + "\""
+		if (infile!= ""):
+			cm_text = cm_text + " --input=\"" + infile + "\""
+			ecm_text = ecm_text + " --input=\"" + infile + "\""
+		if (outfile != ""):
+			cm_text = cm_text + " --output=\"cm_" + outfile + "\""
+			ecm_text = ecm_text + " --output=\"ecm_" + outfile + "\""
 		with open("runme_cm", "w") as f:
-			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			cm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmcm $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock=" + cpuClock + " -c cm_" + program
-			ecm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmecm $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock=" + cpuClock + " -c ecm_" + program
-			if (arguments != ""):
-				cm_text = cm_text + " -o \"" + arguments.replace("output", "cm_output", 1) + "\""
-				ecm_text = ecm_text + " -o \"" + arguments.replace("output", "ecm_output", 1) + "\""
-			if (infile!= ""):
-				cm_text = cm_text + " --input=\"" + infile + "\""
-				ecm_text = ecm_text + " --input=\"" + infile + "\""
-			if (outfile != ""):
-				cm_text = cm_text + " --output=\"cm_" + outfile + "\""
-				ecm_text = ecm_text + " --output=\"ecm_" + outfile + "\""
 			f.write(prolog + "\n")
-#			f.write(cm_text + "\n")
+			f.write(cm_text + "\n")
+		with open("runme_ecm", "w") as f:
+			f.write(prolog + "\n")
 			f.write(ecm_text + "\n")
-    		subprocess.Popen("chmod +x runme_cm", stdout=subprocess.PIPE, shell=True)
+
+    		subprocess.Popen("chmod +x runme_*", stdout=subprocess.PIPE, shell=True)
 
 
 # Create the runme file for stack management
-def create_runme_smmstack(arguments="", infile = "", outfile="", cpuClock = "1.2GHz"):
+def create_runme_smmstack(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", cpuMode = "atomic"):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme_sm")):
+		prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
+		sm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmsm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c sm_" + program
+		ssm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmssm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock="+ cpuClock + " -c ssm_" + program
+		esm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmesm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c esm_" + program
+		if (arguments != ""):
+			sm_text = sm_text + " -o \"" + arguments.replace("output", "sm_output", 1) + "\""
+			ssm_text = ssm_text + " -o \"" + arguments.replace("output", "ssm_output", 1) + "\""
+			esm_text = esm_text + " -o \"" + arguments.replace("output", "esm_output", 1) + "\""
+		if (infile!= ""):
+			sm_text = sm_text + " --input=\"" + infile + "\""
+			ssm_text = ssm_text + " --input=\"" + infile + "\""
+			esm_text = esm_text + " --input=\"" + infile + "\""
+		if (outfile != ""):
+			sm_text = sm_text + " --output=\"sm_" + outfile + "\""
+			ssm_text = ssm_text + " --output=\"ssm_" + outfile + "\""
+			esm_text = esm_text + " --output=\"esm_" + outfile + "\""
 		with open("runme_sm", "w") as f:
-			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			sm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmsm $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock=" + cpuClock + " -c sm_" + program
-			ssm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmssm $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock="+ cpuClock + " -c ssm_" + program
-			esm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmesm $SIMDIR/configs/example/se.py --cpu-type=atomic --cpu-clock=" + cpuClock + " -c esm_" + program
-			if (arguments != ""):
-				sm_text = sm_text + " -o \"" + arguments.replace("output", "sm_output", 1) + "\""
-				ssm_text = ssm_text + " -o \"" + arguments.replace("output", "ssm_output", 1) + "\""
-				esm_text = esm_text + " -o \"" + arguments.replace("output", "esm_output", 1) + "\""
-			if (infile!= ""):
-				sm_text = sm_text + " --input=\"" + infile + "\""
-				ssm_text = ssm_text + " --input=\"" + infile + "\""
-				esm_text = esm_text + " --input=\"" + infile + "\""
-			if (outfile != ""):
-				sm_text = sm_text + " --output=\"sm_" + outfile + "\""
-				ssm_text = ssm_text + " --output=\"ssm_" + outfile + "\""
-				esm_text = esm_text + " --output=\"esm_" + outfile + "\""
 			f.write(prolog + "\n")
-#			f.write(sm_text + "\n")
-#			f.write(ssm_text + "\n")
+			f.write(sm_text + "\n")
+		with open("runme_ssm", "w") as f:
+			f.write(prolog + "\n")
+			f.write(ssm_text + "\n")
+		with open("runme_esm", "w") as f:
+			f.write(prolog + "\n")
 			f.write(esm_text + "\n")
-    		subprocess.Popen("chmod +x runme_sm", stdout=subprocess.PIPE, shell=True)
+    		subprocess.Popen("chmod +x runme*", stdout=subprocess.PIPE, shell=True)
 
 	if (not os.path.isfile("runme_sm_prof")):
 		with open("runme_sm_prof", "w") as f:
 			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			text = "$SIMDIR/build/X86/gem5.debug -q -r -e --stderr-file=simerr -d m5out/smm $SIMDIR/configs/example/se.py --cpu-type=atomic -c " + program
+			text = "$SIMDIR/build/X86/gem5.debug -q -r -e --stderr-file=simerr -d m5out/smm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " -c " + program
 			if (arguments != ""):
 				text = text + " -o \"" + arguments + "\""
 			if (infile!= ""):
@@ -599,7 +570,7 @@ def create_runme_smmstack(arguments="", infile = "", outfile="", cpuClock = "1.2
 
 
 # Create a makefile for a cache-based architecture
-def create_makefile_cache(outfile=""):
+def create_makefile_cache(outfile="", cachingOption = "integrated"):
 	#  Makefile
 	makefile = """
 PROGRAM = ${program}
@@ -623,7 +594,7 @@ $(PROGRAM): $(OBJECTS) mem_heap_allocator.bc
 	llvm-link -o temp_$@.bc $(OBJECTS) mem_heap_allocator.bc
 	opt $(OPTLVL) -disable-inlining < temp_$@.bc > temp1_$@.bc
 	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-prolog < temp1_$@.bc > temp2_$@.bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-stack -user-global -user-heap --debug-only=smmim < temp2_$@.bc > $@.bc
+	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code ${user_data_type} --debug-only=smmim < temp2_$@.bc > $@.bc
 	llvm-dis < $@.bc > $@.ll
 	llc $(OPTLVL) -o $@.s $@.bc 
 	$(CC) -o $@ $@.s $(LDFLAGS) -Wl,-T,cache.ld
@@ -666,6 +637,13 @@ clean:
 			makefile = makefile.replace("${program}", program)
 			makefile = makefile.replace("${source_file_extension}", source_file_extension)
 			makefile = makefile.replace("${outfile}", outfile)
+			if cachingOption == "integrated":
+				makefile = makefile.replace("${user_data_type}", "-user-stack -user-global -user-heap")
+			elif cachingOption == "code":
+				makefile = makefile.replace("${user_data_type}", "")
+			elif cachingOption == "stack":
+				makefile = makefile.replace("${user_data_type}", "-user-stack")
+				
 			f.write(makefile)
 
 # Create a linerscript for a cache-based architecture
@@ -725,13 +703,13 @@ def create_linkerscript_cache():
 				line = implicit_linker_script[i]
 			break
 
-def create_runme_cache(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", l1iSize = "0B", l1dSize = "0B", cachelineSize = "32"):
+def create_runme_cache(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", cpuMode = "atomic", l1iSize = "0B", l1dSize = "0B", cachelineSize = "32"):
 	program = os.path.basename(os.getcwd())
 	# Create a runme script
 	if (not os.path.isfile("runme")):
 		with open("runme", "w") as f:
 			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5-cache"
-			text = "$SIMDIR/build/X86/gem5.debug -r -d m5out/cache $SIMDIR/configs/example/se.py  --cpu-type=atomic --cpu-clock=" + cpuClock + " -c " + program
+			text = "$SIMDIR/build/X86/gem5.debug -r -d m5out/cache $SIMDIR/configs/example/se.py  --cpu-type=" +cpuMode +" --cpu-clock=" + cpuClock + " -c " + program
 			if (arguments != ""):
 				text = text + " -o \"" + arguments + "\""
 			if (infile != ""):
@@ -743,7 +721,7 @@ def create_runme_cache(arguments="", infile = "", outfile="", cpuClock = "1.2GHz
 			if (icacheSize != "0B"):
 				text = text + " --l1i_size=" + icacheSize +" --l1i_assoc=1"
 			if (dcacheSize != "0B"):
-				text = text + " --l1d_size=\"" + dcacheSize +"\""
+				text = text + " --l1d_size=" + dcacheSize 
 			f.write(prolog + "\n")
 			f.write(text + "\n")
     		subprocess.Popen("chmod +x runme", stdout=subprocess.PIPE, shell=True)
@@ -753,7 +731,7 @@ def create_runme_cache(arguments="", infile = "", outfile="", cpuClock = "1.2GHz
 # Get options
 if __name__ == "__main__":
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "-h", ["help", "configure-cache", "cpu_clock=", "l1d_size=", "l1i_size=", "cacheline_size=", "configure-hybrid", "configure-spm-linkerscript=", "isram-config=", "isram-size=", "num-regions=", "dsram-config=", "dsram-size=", "stack-size=", "global-size=",  "args=", "input=", "output=", "clean"]) 
+		opts, args = getopt.getopt(sys.argv[1:], "-h", ["help", "configure-cache=", "cpu_clock=", "cpu_mode=", "l1d_size=", "l1i_size=", "cacheline_size=", "configure-spm", "configure-spm-linkerscript=", "isram-config=", "isram-size=", "num-regions=", "dsram-config=", "dsram-size=", "stack-size=", "global-size=",  "args=", "input=", "output=", "clean"]) 
 	except getopt.GetoptError as err:
 		print str(err)
 		sys.exit(2)
@@ -770,25 +748,30 @@ if __name__ == "__main__":
 	globalsize = 0
 	map = ""
 	cpuClock = "2GHz"
+	cpuMode = "atomic"
 	dcacheSize = "0B"
 	icacheSize = "0B"
 	cachelineSize = "32"
+	cachingOption = "integrated"
 	for opt, arg in opts:
 		if opt in ("-h", "--help"):
-			print 'smmmake --configure-cache --configure-hybrid'
+			print 'smmmake --configure-cache --configure-spm'
 			sys.exit()
 		elif opt in ("--configure-cache"):
 			config = "cache"
+			cachingOption = arg
 		elif opt in ("--cpu_clock"):
 		      	cpuClock = arg
+		elif opt in ("--cpu_mode"):
+		      	cpuMode = arg
 		elif opt in ("--l1i_size"):
 		      	icacheSize = arg
 		elif opt in ("--l1d_size"):
 		      	dcacheSize = arg
 		elif opt in ("--cacheline_size"):
 		      	cachelineSize = arg
-		elif opt in ("--configure-hybrid"):
-			config = "hybrid"
+		elif opt in ("--configure-spm"):
+			config = "spm"
 		elif opt in ("--configure-spm-linkerscript"):
 			config = "linkerscript"
 			map = arg
@@ -827,16 +810,16 @@ if __name__ == "__main__":
 			assert False, "unhandled option"
 
 	if config == "cache":
-		create_makefile_cache(outfile)
+		create_makefile_cache(outfile, cachingOption)
 		create_linkerscript_cache()
-		create_runme_cache(arguments, infile, outfile, cpuClock, icacheSize, dcacheSize, cachelineSize)
-    	if config == "hybrid":
+		create_runme_cache(arguments, infile, outfile, cpuClock, cpuMode, icacheSize, dcacheSize, cachelineSize)
+    	if config == "spm":
 		create_makefile_smmint(arguments, infile, outfile, isramSize, numregions, isramConfig, dsramSize, dsramConfig, stacksize, globalsize)
     		create_linkerscript_spm()
-		create_runme_smm(arguments, infile, outfile, cpuClock)
-		create_runme_smmint(arguments, infile, outfile, cpuClock, icacheSize, dcacheSize, cachelineSize)
-		create_runme_smmcode(arguments, infile, outfile, cpuClock)
-		create_runme_smmstack(arguments, infile, outfile, cpuClock)
+		create_runme_mem(arguments, infile, outfile, cpuClock, cpuMode)
+		create_runme_smmint(arguments, infile, outfile, cpuClock, cpuMode, icacheSize, dcacheSize, cachelineSize)
+		create_runme_smmcode(arguments, infile, outfile, cpuClock, cpuMode)
+		create_runme_smmstack(arguments, infile, outfile, cpuClock, cpuMode)
     	if config == "linkerscript":
 		create_linkerscript_spm(map)
 
