@@ -51,7 +51,6 @@ void fft_float (
     double angle_numerator = 2.0 * DDC_PI;
     double tr, ti;     /* temp real, temp imaginary */
 
-    printf("NumSamples=%u\n", NumSamples);
     if ( !IsPowerOfTwo(NumSamples) )
     {
         fprintf (

@@ -34,8 +34,6 @@
 
 int IsPowerOfTwo ( unsigned x )
 {
-    //printf("%s: %u\n", __func__, x);
-    fprintf(stderr, "%u\n", x);
     if ( x < 2 )
         return FALSE;
 
