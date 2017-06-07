@@ -6,7 +6,9 @@ import subprocess
 import sys
 
 def getCacheSimInsts():
-	path = "cache-siminst/cache"
+    	# without the extra instructions inserted for caching stack data from predefined functions
+#	path = "cache-siminst/cache"
+	path = "code-m5out/cache"
 	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
     	if len(tempList) == 0:

@@ -7,7 +7,7 @@ import sys
 
 config = "spm"
 try:
-	opts, args = getopt.getopt(sys.argv[1:], "-h", ["cache", "spm", "code", "stack", "global"]) 
+	opts, args = getopt.getopt(sys.argv[1:], "-h", ["cache", "spm", "cm", "ecm", "sm", "ssm", "esm"]) 
 except getopt.GetoptError as err:
 	print str(err)
 	sys.exit(2)
@@ -17,12 +17,16 @@ for opt, arg in opts:
 		config = "cache"
 	elif opt in ("--spm"):
 		config = "spm"
-	elif opt in ("--code"):
-		config = "code"
-	elif opt in ("--stack"):
-		config = "stack"
-	elif opt in ("--global"):
-		config = "global"
+	elif opt in ("--cm"):
+		config = "cm"
+	elif opt in ("--ecm"):
+		config = "ecm"
+	elif opt in ("--sm"):
+		config = "sm"
+	elif opt in ("--ssm"):
+		config = "ssm"
+	elif opt in ("--esm"):
+		config = "esm"
 cwd = os.getcwd()
 work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
 os.chdir(work_dir)
@@ -41,14 +45,20 @@ for directory in sorted(directories):
    	print directory
     	if config == "cache":
 		command = "./configure-cache; make clean; make; ./runme;"
-	if config == "int":
-		command = "./configure-spm; make clean; make; make eim; ./runme_im;"
-	elif config == "code":
-		command = "./configure-spm; make clean; make; make ecm; ./runme_cm;"
-	elif config == "stack":
-		command = "./configure-spm; make clean; make; make esm; ./runme_sm;"
-	elif config == "global":
-		command = "./configure-spm; make clean; make; make egm; ./runme_gm;"
+	if config == "mem":
+		command = "./configure-spm; make clean; make; ./runme;"
+	if config == "spm":
+		command = "./configure-spm; make clean; make eim; ./runme_im;"
+	elif config == "cm":
+		command = "./configure-spm; make clean; make cm; ./runme_cm;"
+	elif config == "ecm":
+		command = "./configure-spm; make clean; make cm; make ecm; ./runme; ./runme_cm; ./runme_ecm;"
+	elif config == "sm":
+		command = "./configure-spm; make clean; make sm; ./runme_sm;"
+	elif config == "ssm":
+		command = "./configure-spm; make clean; make ssm; ./runme_ssm;"
+	elif config == "esm":
+		command = "./configure-spm; make clean; make esm; ./runme_esm;"
 	subprocess.call(command, shell=True)
 	os.chdir(work_dir)
 os.chdir (cwd)
