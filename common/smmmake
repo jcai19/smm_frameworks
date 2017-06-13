@@ -267,7 +267,7 @@ clean:
 			if (outfile == ""):
 				makefile = makefile.replace("${outfile}", "")
 			else:
-				makefile = makefile.replace("${outfile}", outfile +" cm_" + outfile + " ecm_" + outfile + " sm_" + outfile + " ssm_" + outfile + " esm_" + outfile + " egm_" + outfile + " im_" + outfile + " eim_" + outfile)
+				makefile = makefile.replace("${outfile}", outfile +" cm_" + outfile + " ecm_" + outfile + " sm_" + outfile + " ssm_" + outfile + " esm_" + outfile + " eim_" + outfile)
 			# make prof
 			makefile = makefile.replace("${arguments}", arguments)
 			if (infile != ""):
@@ -454,45 +454,27 @@ def create_runme_mem(arguments="", infile = "", outfile="", cpuClock = "1.2GHz",
 def create_runme_smmint(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", cpuMode = "atomic", l1iSize = "0B", l1dSize = "0B", cachelineSize = "32"):
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
-	if (not os.path.isfile("runme_im")):
-		with open("runme_im", "w") as f:
-			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			im_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmim $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock +" -c im_" + program
-			eim_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmeim $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock +" -c eim_" + program
-			if (arguments != ""):
-				im_text = im_text + " -o \"" + arguments.replace("output", "im_output", 1) + "\""
-				eim_text = eim_text + " -o \"" + arguments.replace("output", "eim_output", 1) + "\""
-			if (infile!= ""):
-				im_text = im_text + " --input=\"" + infile + "\""
-				eim_text = eim_text + " --input=\"" + infile + "\""
-			if (outfile != ""):
-				im_text = im_text + " --output=\"im_" + outfile + "\""
-				eim_text = eim_text + " --output=\"eim_" + outfile + "\""
-			cacheParams = ""
-			if l1iSize != "0B"  or l1dSize != "0B":
-				cacheParams = " --caches --cacheline_size=" + cachelineSize
-				if l1iSize != "0B":
-					cacheParams = cacheParams + " --l1i_size=" + l1iSize + " --l1i_assoc=1" 
-				if l1dSize != "0B":
-					cacheParams = cacheParams + " --l1d_size " + l1dSize
+	if (not os.path.isfile("runme_eim")):
+		prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
+		eim_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmeim $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock +" -c eim_" + program
+		if (arguments != ""):
+			eim_text = eim_text + " -o \"" + arguments.replace("output", "eim_output", 1) + "\""
+		if (infile!= ""):
+			eim_text = eim_text + " --input=\"" + infile + "\""
+		if (outfile != ""):
+			eim_text = eim_text + " --output=\"eim_" + outfile + "\""
+		cacheParams = ""
+		if l1iSize != "0B"  or l1dSize != "0B":
+			cacheParams = " --caches --cacheline_size=" + cachelineSize
+			if l1iSize != "0B":
+				cacheParams = cacheParams + " --l1i_size=" + l1iSize + " --l1i_assoc=1" 
+			if l1dSize != "0B":
+				cacheParams = cacheParams + " --l1d_size " + l1dSize
+		with open("runme_eim", "w") as f:
 			f.write(prolog + "\n")
-			#f.write(im_text + cacheParams + "\n")
 			f.write(eim_text + cacheParams + "\n")
-    		subprocess.Popen("chmod +x runme_im", stdout=subprocess.PIPE, shell=True)
+    		subprocess.Popen("chmod +x runme*", stdout=subprocess.PIPE, shell=True)
 
-	if (not os.path.isfile("runme_sm_prof")):
-		with open("runme_sm_prof", "w") as f:
-			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			text = "$SIMDIR/build/X86/gem5.debug -q -r -e --stderr-file=simerr -d m5out/smm $SIMDIR/configs/example/se.py --cpu-type="+cpuMode+" --cpu-clock=" + cpuClock + " -c " + program
-			if (arguments != ""):
-				text = text + " -o \"" + arguments + "\""
-			if (infile!= ""):
-				text = text + " --input=\"" + infile + "\""
-			if (outfile != ""):
-				text = text + " --output=\"" + outfile + "\""
-			f.write(prolog + "\n")
-			f.write(text + "\n")
-    		subprocess.Popen("chmod +x runme_sm_prof", stdout=subprocess.PIPE, shell=True)
 
 # Create the runme file for code management
 def create_runme_smmcode(arguments="", infile = "", outfile="", cpuClock = "1.2GHz", cpuMode = "atomic"):
@@ -530,18 +512,22 @@ def create_runme_smmstack(arguments="", infile = "", outfile="", cpuClock = "1.2
 		sm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmsm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c sm_" + program
 		ssm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmssm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock="+ cpuClock + " -c ssm_" + program
 		esm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmesm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c esm_" + program
+		prof_text = "$SIMDIR/build/X86/gem5.debug -q -r -e --stderr-file=simerr -d m5out/smm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " -c " + program
 		if (arguments != ""):
 			sm_text = sm_text + " -o \"" + arguments.replace("output", "sm_output", 1) + "\""
 			ssm_text = ssm_text + " -o \"" + arguments.replace("output", "ssm_output", 1) + "\""
 			esm_text = esm_text + " -o \"" + arguments.replace("output", "esm_output", 1) + "\""
+			prof_text = prof_text + " -o \"" + arguments + "\""
 		if (infile!= ""):
 			sm_text = sm_text + " --input=\"" + infile + "\""
 			ssm_text = ssm_text + " --input=\"" + infile + "\""
 			esm_text = esm_text + " --input=\"" + infile + "\""
+			prof_text = prof_text + " --input=\"" + infile + "\""
 		if (outfile != ""):
 			sm_text = sm_text + " --output=\"sm_" + outfile + "\""
 			ssm_text = ssm_text + " --output=\"ssm_" + outfile + "\""
 			esm_text = esm_text + " --output=\"esm_" + outfile + "\""
+			prof_text = prof_text + " --output=\"" + outfile + "\""
 		with open("runme_sm", "w") as f:
 			f.write(prolog + "\n")
 			f.write(sm_text + "\n")
@@ -551,21 +537,10 @@ def create_runme_smmstack(arguments="", infile = "", outfile="", cpuClock = "1.2
 		with open("runme_esm", "w") as f:
 			f.write(prolog + "\n")
 			f.write(esm_text + "\n")
+#		with open("runme_sm_prof", "w") as f:
+#			f.write(prolog + "\n")
+#			f.write(prof_text + "\n")
     		subprocess.Popen("chmod +x runme*", stdout=subprocess.PIPE, shell=True)
-
-	if (not os.path.isfile("runme_sm_prof")):
-		with open("runme_sm_prof", "w") as f:
-			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
-			text = "$SIMDIR/build/X86/gem5.debug -q -r -e --stderr-file=simerr -d m5out/smm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " -c " + program
-			if (arguments != ""):
-				text = text + " -o \"" + arguments + "\""
-			if (infile!= ""):
-				text = text + " --input=\"" + infile + "\""
-			if (outfile != ""):
-				text = text + " --output=\"" + outfile + "\""
-			f.write(prolog + "\n")
-			f.write(text + "\n")
-    		subprocess.Popen("chmod +x runme_sm_prof", stdout=subprocess.PIPE, shell=True)
 
 
 
@@ -804,8 +779,6 @@ if __name__ == "__main__":
     				subprocess.Popen("rm Makefile", stdout=subprocess.PIPE, shell=True)
 			if  len(glob.glob("*runme*")) > 0:
     				subprocess.Popen("rm *runme*", stdout=subprocess.PIPE, shell=True)
-#			if (os.path.isdir("m5out")):
-#    				subprocess.Popen("rm -r m5out", stdout=subprocess.PIPE, shell=True)
 		else:
 			assert False, "unhandled option"
 
