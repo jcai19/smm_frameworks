@@ -1,3 +1,0 @@
-main 48
-adpcm_coder 240
-adpcm_decoder 128

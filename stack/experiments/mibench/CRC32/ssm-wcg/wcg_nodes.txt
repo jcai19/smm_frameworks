@@ -1,4 +1,0 @@
-updateCRC32 8
-crc32file 112
-crc32buf 8
-main 128

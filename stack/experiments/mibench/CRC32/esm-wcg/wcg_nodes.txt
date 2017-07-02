@@ -1,9 +1,0 @@
-updateCRC32 8
-crc32file 112
-crc32buf 8
-main 128
-printf 1608
-ferror 8
-_IO_getc 280
-fopen 72
-fclose 40
