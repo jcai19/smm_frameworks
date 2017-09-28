@@ -16,7 +16,8 @@ def create_makefile_smmint(arguments="", infile = "", outfile="", isramSize = 0,
 	makefile = """
 PROGRAM = ${program}
 
-SMMDIR=$(HOME)/Documents/smm
+WD=$(HOME)/Workspace
+SMMDIR=$(WD)/smm_framework
 
 INCLUDEDIRS=
 INCLUDE=
@@ -26,22 +27,22 @@ OPTLVL = -O3
 
 OBJECTS = ${object_files}
 CC=clang
-CFLAGS = $(INCLUDEDIRS) $(INCLUDE) $(OPTLVL) -fno-inline
+CFLAGS = $(INCLUDEDIRS) $(INCLUDE) -fno-inline
 LDFLAGS = $(LIBDIRS) $(LIBS) -static
 
 all: $(PROGRAM)
 
 $(PROGRAM): $(OBJECTS)
 	llvm-link -o temp_$@.bc $(OBJECTS)
-	opt $(OPTLVL) -disable-inlining < temp_$@.bc > $@.bc
+	opt $(OPTLVL) -disable-inlining -disable-loop-unrolling < temp_$@.bc > $@.bc
 	llvm-dis < $@.bc > $@.ll
-	llc -O3 -o $@.s $@.bc 
+	llc $(OPTLVL) -o $@.s $@.bc
 	$(CC) -o $@ $@.s $(LDFLAGS)
 	objdump -d $@ > $@.dis
 	-rm temp_$@.bc
 
 basic_$(PROGRAM).bc: $(PROGRAM)
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-prolog < $(PROGRAM).bc > basic_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-prolog < $(PROGRAM).bc > basic_$(PROGRAM).bc
 	llvm-dis < basic_$(PROGRAM).bc > basic_$(PROGRAM).ll
 	-rm temp*_$(PROGRAM).bc
 
@@ -49,17 +50,17 @@ basic_$(PROGRAM).bc: $(PROGRAM)
 
 function_size.txt: $(PROGRAM)
 	# Get user functions names
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -funcname < $(PROGRAM).bc > /dev/null 2> user_funcs.txt
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -funcname < $(PROGRAM).bc > /dev/null 2> user_funcs.txt
 	# Get the code size of user functions
 	codeSize user_funcs.txt 2> function_size.txt
 	-rm user_funcs.txt
 
 code_size.txt: $(PROGRAM) function_size.txt
-	opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -get-map -func-size function_size.txt --num-region-constraint 2 -code-size code_size.txt < $(PROGRAM).bc > /dev/null
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -debug-only=smmcm -get-map -func-size function_size.txt --num-region-constraint 2 -code-size code_size.txt < $(PROGRAM).bc > /dev/null
 
 map.txt: $(PROGRAM) function_size.txt
 	# Get code overlay scheme
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -get-map -func-size function_size.txt ${code_size_constraint} ${num_region_constraint} < $(PROGRAM).bc > /dev/null 2> map.txt
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCMH.so -get-map -func-size function_size.txt ${code_size_constraint} ${num_region_constraint} < $(PROGRAM).bc > /dev/null 2> map.txt
 	# Get the linker script based on overlay scheme
 	smmmake --configure-spm-linkerscript map.txt
 
@@ -67,20 +68,20 @@ map.txt: $(PROGRAM) function_size.txt
 cm: basic_$(PROGRAM).bc dma.bc code_manager.bc map.txt 
 	llvm-link -o temp_$(PROGRAM).bc dma.bc code_manager.bc basic_$(PROGRAM).bc
 	# Insert code management functions
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm -map map.txt --debug-only=smmcm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCM.so -smmcm -map map.txt --debug-only=smmcm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
-	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc
+	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
 	objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 
 ecm: basic_$(PROGRAM).bc dma.bc code_manager.bc map.txt
 	llvm-link -o temp_$(PROGRAM).bc dma.bc code_manager.bc basic_$(PROGRAM).bc
 	# Insert code management functions based on code overlay scheme
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt --debug-only=smmecm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt --debug-only=smmecm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
-	llc -O3 -o $@_$(PROGRAM).s $@_$(PROGRAM).bc
+	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
 	objdump -d $@_$(PROGRAM) > $@_$(PROGRAM).dis
 
@@ -91,15 +92,15 @@ stack_frame_size_with_lib_funcs: $(PROGRAM)
     	# The trace of function calls in Gem5 must have ben prepared
 
 	# Print the size of the stack frame of user-defined functions into stack_frame_size.txt
-	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> stack_frame_size.txt
+	$(WD)/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> stack_frame_size.txt
 
 	# Print the names of the library functions into lib_funcs.txt
-	#opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -libfunc < $(PROGRAM).bc > /dev/null 2> lib_funcs.txt
+	#opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -libfunc < $(PROGRAM).bc > /dev/null 2> lib_funcs.txt
 	# Get the stack frame size of the library functions listed in lib_funcs.txt and add them to stack_frame_size.txt
 	#libFuncFrameSize lib_funcs.txt stack_frame_size.txt
 
 	# Get the call paths and save the result in wcg_paths.txt, based on stack_frame_size.txt
-	#opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -wcg < $(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
+	#opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -wcg < $(PROGRAM).bc > /dev/null 2> wcg_paths.txt 
 
 	#-rm -rf sm
 	#mkdir sm
@@ -109,16 +110,16 @@ stack_frame_size_with_lib_funcs: $(PROGRAM)
 
 stack_frame_size.txt: $(PROGRAM)
 	# Print the size of the stack frame of user-defined functions into stack_frame_size.txt
-	~/Applications/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> stack_frame_size.txt
+	$(WD)/llvm-3.6.0/build/Debug+Asserts/bin/clang -o $(PROGRAM) $(PROGRAM).bc $(LDFLAGS) 2> stack_frame_size.txt
 
 stack_size.txt: $(PROGRAM) stack_frame_size.txt
-	opt $(OPTLVL) -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -estimate-size -stack-frame-size stack_frame_size.txt < $(PROGRAM).bc > /dev/null 2> stack_size.txt 
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMSMH.so -estimate-size -stack-frame-size stack_frame_size.txt < $(PROGRAM).bc > /dev/null 2> stack_size.txt 
 	
 
 sm: basic_$(PROGRAM).bc dma.bc stack_manager.bc
 	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSM.so -smmsm --debug-only=smmssm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMSM.so -smmsm --debug-only=smmssm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -128,8 +129,8 @@ sm: basic_$(PROGRAM).bc dma.bc stack_manager.bc
 
 ssm: basic_$(PROGRAM).bc dma.bc stack_manager.bc stack_frame_size.txt
 	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmssm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt --debug-only=smmssm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMSSM.so -smmssm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt --debug-only=smmssm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -139,8 +140,8 @@ ssm: basic_$(PROGRAM).bc dma.bc stack_manager.bc stack_frame_size.txt
 
 esm: basic_$(PROGRAM).bc dma.bc stack_manager.bc stack_frame_size.txt
 	llvm-link -o temp_$(PROGRAM).bc dma.bc stack_manager.bc basic_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt --debug-only=smmesm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt --debug-only=smmesm < temp_$(PROGRAM).bc > temp1_$(PROGRAM).bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code --debug-only=smm < temp1_$(PROGRAM).bc > $@_$(PROGRAM).bc
 	llvm-dis < $@_$(PROGRAM).bc > $@_$(PROGRAM).ll
 	llc $(OPTLVL) -o $@_$(PROGRAM).s $@_$(PROGRAM).bc 
 	$(CC) -o $@_$(PROGRAM) $@_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld
@@ -151,12 +152,12 @@ esm: basic_$(PROGRAM).bc dma.bc stack_manager.bc stack_frame_size.txt
 
 global_variable_size.txt: $(PROGRAM)
 	# Get the size of global variables
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMGMH.so -estimate-size < $(PROGRAM).bc > /dev/null 2> global_variable_size.txt
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMGMH.so -estimate-size < $(PROGRAM).bc > /dev/null 2> global_variable_size.txt
 
 
 # Integrated 
 im_sram_config.txt: $(PROGRAM) stack_frame_size.txt
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMIMH.so -estimate-accesses ${code_size_constraint} -code-size code_size.txt -stack-frame-size stack_frame_size.txt ${data_size_constraint} -stack-size stack_size.txt -output im_sram_config.txt --debug-only=smmim < $(PROGRAM).bc > /dev/null
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMIMH.so -estimate-accesses ${code_size_constraint} -code-size code_size.txt -stack-frame-size stack_frame_size.txt ${data_size_constraint} -stack-size stack_size.txt -output im_sram_config.txt --debug-only=smmim < $(PROGRAM).bc > /dev/null
 
 ${integrated_mnmt}
 
@@ -186,6 +187,11 @@ heap_size_counter.bc:$(SMMDIR)/heap/lib/heap_size_counter.c
 
 cfg: $(PROGRAM)
 	opt -dot-cfg-only < $(PROGRAM).bc
+
+
+callgraph: $(PROGRAM)
+	opt -dot-callgraph < $(PROGRAM).bc
+	dot -Tpng callgraph.dot > $(PROGRAM)-cg.png
 
 clean:
 	-rm -rf  $(PROGRAM) *.bc *.ll *.s *.dis *.dot *.png ${outfile} cm_$(PROGRAM) ecm_$(PROGRAM) sm_$(PROGRAM) ssm_$(PROGRAM) esm_$(PROGRAM) egm_$(PROGRAM) im_$(PROGRAM) eim_$(PROGRAM) map.txt
@@ -226,28 +232,28 @@ clean:
 					# stack management
 					integratedMnmt = integratedMnmt + "\tllvm-link -o temp" + str(counter+1) + "_$(PROGRAM).bc temp" + str(counter) + "_$(PROGRAM).bc stack_manager.bc\n"
 					counter = counter + 1
-					integratedMnmt = integratedMnmt + "\topt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt < temp" + str(counter) + "_$(PROGRAM).bc > temp" + str(counter+1) + "_$(PROGRAM).bc\n"
+					integratedMnmt = integratedMnmt + "\topt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMESM.so -smmesm ${stack_size_constraint} -stack-frame-size stack_frame_size.txt < temp" + str(counter) + "_$(PROGRAM).bc > temp" + str(counter+1) + "_$(PROGRAM).bc\n"
 					counter = counter + 1
 					# global management
 					integratedMnmt = integratedMnmt + "\tllvm-link -o temp" + str(counter+1) + "_$(PROGRAM).bc temp" + str(counter) + "_$(PROGRAM).bc spm_heap_allocator.bc\n"
 					counter = counter + 1
-					integratedMnmt = integratedMnmt + "\topt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMEGM.so -smmegm ${global_size_constraint} < temp"+str(counter)+"_$(PROGRAM).bc > temp" + str(counter+1) + "_$(PROGRAM).bc\n"
+					integratedMnmt = integratedMnmt + "\topt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMEGM.so -smmegm ${global_size_constraint} < temp"+str(counter)+"_$(PROGRAM).bc > temp" + str(counter+1) + "_$(PROGRAM).bc\n"
 					counter = counter + 1
 				# code management
 				if isramConfig == 1:
 					integratedMnmt = integratedMnmt + "\tllvm-link -o temp" + str(counter+1) + "_$(PROGRAM).bc temp" + str(counter) + "_$(PROGRAM).bc code_manager.bc\n"
 					counter = counter + 1
-					integratedMnmt = integratedMnmt + "\topt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt < temp"+str(counter)+"_$(PROGRAM).bc > temp" + str(counter+1) + "_$(PROGRAM).bc\n"
+					integratedMnmt = integratedMnmt + "\topt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMECM.so -smmecm -map map.txt < temp"+str(counter)+"_$(PROGRAM).bc > temp" + str(counter+1) + "_$(PROGRAM).bc\n"
 					counter = counter + 1
 				# epilog (if dramConfig == 0 then number of dcache misses from caching are used)
-				integratedMnmt = integratedMnmt + "\topt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp" + str(counter) + "_$(PROGRAM).bc > eim_$(PROGRAM).bc\n"
+				integratedMnmt = integratedMnmt + "\topt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp" + str(counter) + "_$(PROGRAM).bc > eim_$(PROGRAM).bc\n"
 			else:
 				# if isramConfig ==0 and dramConfig == 0, then number of dcache misses from caching are used)
 				integratedMnmt = integratedMnmt + "\n"
 				integratedMnmt = integratedMnmt + "\tllvm-link -o temp_$(PROGRAM).bc basic_$(PROGRAM).bc\n"
-				integratedMnmt = integratedMnmt + "\topt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp_$(PROGRAM).bc > eim_$(PROGRAM).bc\n"
+				integratedMnmt = integratedMnmt + "\topt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code -user-global < temp_$(PROGRAM).bc > eim_$(PROGRAM).bc\n"
 			integratedMnmt = integratedMnmt + "\tllvm-dis < eim_$(PROGRAM).bc > eim_$(PROGRAM).ll\n"
-			integratedMnmt = integratedMnmt + "\tllc -O3 -o eim_$(PROGRAM).s eim_$(PROGRAM).bc\n"
+			integratedMnmt = integratedMnmt + "\tllc $(OPTLVL) -o eim_$(PROGRAM).s eim_$(PROGRAM).bc\n"
 			integratedMnmt = integratedMnmt + "\t$(CC) -o eim_$(PROGRAM) eim_$(PROGRAM).s $(LDFLAGS) -Wl,-T,spm.ld\n"
 			integratedMnmt = integratedMnmt + "\t#objdump -d eim_$(PROGRAM) > eim_$(PROGRAM).dis\n"
 			integratedMnmt = integratedMnmt + "\trm temp*_$(PROGRAM).bc\n"
@@ -436,7 +442,7 @@ def create_runme_mem(arguments="", infile = "", outfile="", cpuClock = "1.2GHz",
 	# Create a runme file 
 	if (not os.path.isfile("runme")):
 		with open("runme", "w") as f:
-			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
+			prolog = "#!/bin/sh\nSIMDIR=~/Workspace/gem5"
 			text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/mem $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c " + program
 			if (arguments != ""):
 				text = text + " -o \"" + arguments + "\""
@@ -455,7 +461,7 @@ def create_runme_smmint(arguments="", infile = "", outfile="", cpuClock = "1.2GH
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme_eim")):
-		prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
+		prolog = "#!/bin/sh\nSIMDIR=~/Workspace/gem5"
 		eim_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmeim $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock +" -c eim_" + program
 		if (arguments != ""):
 			eim_text = eim_text + " -o \"" + arguments.replace("output", "eim_output", 1) + "\""
@@ -481,7 +487,7 @@ def create_runme_smmcode(arguments="", infile = "", outfile="", cpuClock = "1.2G
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme_cm")):
-		prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
+		prolog = "#!/bin/sh\nSIMDIR=~/Workspace/gem5"
 		cm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmcm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c cm_" + program
 		ecm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmecm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c ecm_" + program
 		if (arguments != ""):
@@ -508,7 +514,7 @@ def create_runme_smmstack(arguments="", infile = "", outfile="", cpuClock = "1.2
 	program = os.path.basename(os.getcwd())
 	# Create a runme file 
 	if (not os.path.isfile("runme_sm")):
-		prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5"
+		prolog = "#!/bin/sh\nSIMDIR=~/Workspace/gem5"
 		sm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmsm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c sm_" + program
 		ssm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmssm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock="+ cpuClock + " -c ssm_" + program
 		esm_text = "$SIMDIR/build/X86/gem5.debug -q -r -d m5out/spm/smmesm $SIMDIR/configs/example/se.py --cpu-type=" + cpuMode + " --cpu-clock=" + cpuClock + " -c esm_" + program
@@ -550,7 +556,8 @@ def create_makefile_cache(outfile="", cachingOption = "integrated"):
 	makefile = """
 PROGRAM = ${program}
 
-SMMDIR=$(HOME)/Documents/smm
+WD=$(HOME)/Workspace
+SMMDIR=$(WD)/smm_framework
 
 INCLUDEDIRS=
 INCLUDE=
@@ -560,16 +567,16 @@ OPTLVL = -O3
 
 OBJECTS = ${object_files}
 CC=clang
-CFLAGS = $(INCLUDEDIRS) $(INCLUDE) $(OPTLVL) -fno-inline
+CFLAGS = $(INCLUDEDIRS) $(INCLUDE) -fno-inline
 LDFLAGS = $(LIBDIRS) $(LIBS) -static
 
 all: $(PROGRAM)
 
 $(PROGRAM): $(OBJECTS) mem_heap_allocator.bc
 	llvm-link -o temp_$@.bc $(OBJECTS) mem_heap_allocator.bc
-	opt $(OPTLVL) -disable-inlining < temp_$@.bc > temp1_$@.bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-prolog < temp1_$@.bc > temp2_$@.bc
-	opt -load $(HOME)/Applications/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code ${user_data_type} --debug-only=smmim < temp2_$@.bc > $@.bc
+	opt $(OPTLVL) -disable-inlining -disable-loop-unrolling < temp_$@.bc > temp1_$@.bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -smm-prolog < temp1_$@.bc > temp2_$@.bc
+	opt -load $(WD)/llvm-3.6.0/build/Debug+Asserts/lib/SMMCommon.so -user-code ${user_data_type} --debug-only=smmim < temp2_$@.bc > $@.bc
 	llvm-dis < $@.bc > $@.ll
 	llc $(OPTLVL) -o $@.s $@.bc 
 	$(CC) -o $@ $@.s $(LDFLAGS) -Wl,-T,cache.ld
@@ -683,7 +690,7 @@ def create_runme_cache(arguments="", infile = "", outfile="", cpuClock = "1.2GHz
 	# Create a runme script
 	if (not os.path.isfile("runme")):
 		with open("runme", "w") as f:
-			prolog = "#!/bin/sh\nWORK=$HOME\nSIMDIR=$WORK/Applications/gem5-cache"
+			prolog = "#!/bin/sh\nSIMDIR=~/Workspace/gem5-cache"
 			text = "$SIMDIR/build/X86/gem5.debug -r -d m5out/cache $SIMDIR/configs/example/se.py  --cpu-type=" +cpuMode +" --cpu-clock=" + cpuClock + " -c " + program
 			if (arguments != ""):
 				text = text + " -o \"" + arguments + "\""
