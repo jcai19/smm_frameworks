@@ -27,24 +27,6 @@ argv = [
 	("susan.smoothing", "--args \"input_small.pgm output_small.smoothing.pgm -s\""),
 ]
 
-argv_large = [
-    	("adpcm.decode", "--input data/large.adpcm --output large.pcm"),
-	("adpcm.encode", "--input data/large.pcm --output output_large.adpcm"),
-	("basicmath", "--output output_large.txt"), # need a different main
-	("CRC32", "--args data/large.pcm --output output_large.txt"),
-	("dijkstra", "--args input.dat --output output-large.dat"), # need a different main
-	("FFT", "--args \"8 32768\" --output output_large.txt"),
-	("IFFT", "--args \"8 32768 -i\" --output output_large.inv.txt"),
-	("patricia", "--args large.udp --output output_large.txt"),
-	("rijndael.decode", "--args \"input_large.enc output_large.dec d 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\""),
-	("rijndael.encode", "--args \"input_large.asc output_large.enc e 1234567890abcdeffedcba09876543211234567890abcdeffedcba0987654321\""),
-	("sha", "--args \"input_large.asc\" --output output_large.txt"),
-	("stringsearch", "--output output_large.txt"), # need a different main
-	("susan.corners", "--args \"input_large.pgm output_large.corners.pgm -c\""),
-	("susan.edges", "--args \"input_large.pgm output_large.edges.pgm -e\""),
-	("susan.smoothing", "--args \"input_large.pgm output_large.smoothing.pgm -s\""),
-]
-
 def GLB(num):
     return long(pow(2, math.floor(math.log(num, 2))))
 
@@ -221,12 +203,13 @@ def configure_code():
 		minCodeSize = long(f.readline().split()[1])
  		maxCodeSize = long(f.readline().split()[1])
 		f.close()
-    		isramSize = LGB(minCodeSize)
+#		isramSize = LGB(minCodeSize)
+		isramSize = LGB(long(minCodeSize + float(minCodeSize+maxCodeSize) * 0.5))
 
 		# configure caches
 		f = open('configure-cache', 'w')
 		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-cache code " + options + " --cpu_clock 1.2GHz --l1i_size " + str(isramSize) + "B"
+		command = command + "smmmake --clean; smmmake --configure-cache code " + options + " --cpu_clock 1.2GHz --l1i_size " + str(LGB(isramSize)) + "B"
 		f.write(command)
     		f.close()
 		# configure SPM
@@ -269,12 +252,13 @@ def configure_stack():
 		minStackSize = long(f.readline().split()[1])
  		maxStackSize = long(f.readline().split()[1])
 		f.close()
-    		dsramSize = LGB(long(math.ceil( (minStackSize+maxStackSize) / 2 )))
+#    		dsramSize = LGB(long(math.ceil( (minStackSize+maxStackSize) / 2)))
+		dsramSize = LGB(long(minStackSize + float(minStackSize+maxStackSize) * 0.5))
 
 		# configure caches
 		f = open('configure-cache', 'w')
 		command = "#!/bin/sh\n"
-		command = command + "smmmake --clean; smmmake --configure-cache stack " + options + " --cpu_clock 1.2GHz --l1d_size " + str(dsramSize) +"B --cacheline_size 64"
+		command = command + "smmmake --clean; smmmake --configure-cache stack " + options + " --cpu_clock 1.2GHz --l1d_size " + str(LGB(dsramSize)) +"B --cacheline_size 64"
 		f.write(command)
     		f.close()
 		# configure SPM

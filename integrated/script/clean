@@ -31,11 +31,11 @@ for directory in directories:
 	os.chdir(directory)
 	print directory
 	if option == 0:
-		command = "make clean; smmmake --clean;"
+		command = "./configure-cache; make clean; ./configure-spm; make clean; smmmake --clean;"
 	elif option == 1:
-		command = "make clean; smmmake --clean; rm -r m5out; rm im_sram_config.txt"
+		command = "./configure-cache; make clean; ./configure-spm; make clean; smmmake --clean; rm -r m5out; rm im_sram_config.txt"
 	else:
-		command = "make clean; smmmake --clean; rm -r m5out; rm im_sram_config.txt function_size.txt code_size.txt stack_frame_size.txt stack_size.txt global_variable_size.txt configure-*"
+		command = "./configure-cache; make clean; ./configure-spm; make clean; make clean; smmmake --clean; rm -r m5out; rm im_sram_config.txt function_size.txt code_size.txt stack_frame_size.txt stack_size.txt global_variable_size.txt configure-*"
 	subprocess.call(command, shell=True)
 	os.chdir(work_dir)
 os.chdir(cwd)

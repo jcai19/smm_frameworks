@@ -5,18 +5,18 @@ import subprocess
 import sys
 
 
-config = "spm"
+config = "eim"
 try:
-	opts, args = getopt.getopt(sys.argv[1:], "-h", ["cache", "spm", "cm", "ecm", "sm", "ssm", "esm"]) 
+	opts, args = getopt.getopt(sys.argv[1:], "-h", ["mem", "cache", "cm", "ecm", "sm", "ssm", "esm", "eim"]) 
 except getopt.GetoptError as err:
 	print str(err)
 	sys.exit(2)
 for opt, arg in opts:
 	print opt
-	if opt in ("--cache"):
+	if opt in ("--mem"):
+		config = "mem"
+	elif opt in ("--cache"):
 		config = "cache"
-	elif opt in ("--spm"):
-		config = "spm"
 	elif opt in ("--cm"):
 		config = "cm"
 	elif opt in ("--ecm"):
@@ -27,6 +27,8 @@ for opt, arg in opts:
 		config = "ssm"
 	elif opt in ("--esm"):
 		config = "esm"
+	elif opt in ("--eim"):
+		config = "eim"
 cwd = os.getcwd()
 work_dir = os.path.dirname(cwd)  + "/experiments/mibench"
 os.chdir(work_dir)
@@ -47,8 +49,6 @@ for directory in sorted(directories):
 		command = "./configure-cache; make clean; make; ./runme;"
 	if config == "mem":
 		command = "./configure-spm; make clean; make; ./runme;"
-	if config == "spm":
-		command = "./configure-spm; make clean; make eim; ./runme_im;"
 	elif config == "cm":
 		command = "./configure-spm; make clean; make cm; ./runme_cm;"
 	elif config == "ecm":
@@ -58,7 +58,10 @@ for directory in sorted(directories):
 	elif config == "ssm":
 		command = "./configure-spm; make clean; make ssm; ./runme_ssm;"
 	elif config == "esm":
+#		command = "./configure-spm; make clean; make ssm; ./run_ssm; make esm; ./runme_esm; ./configure-cache; make; ./runme"
 		command = "./configure-spm; make clean; make esm; ./runme_esm;"
+	if config == "eim":
+		command = "./configure-spm; make clean; make eim; ./runme_eim;"
 	subprocess.call(command, shell=True)
 	os.chdir(work_dir)
 os.chdir (cwd)
