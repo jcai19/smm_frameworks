@@ -65,14 +65,16 @@ char * _g2l(char *gaddr, unsigned long size) {
     if (_mem_stack_depth == 0) {
 	if (gaddr >= _mem_stack_base - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack_base) {
 	    laddr = _spm_stack_base - (_mem_stack_base - gaddr);
-	    dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
+	    //dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
 	    //laddr = buf1;
+	    dma((void *)buf1, (void *)buf2, size, MEM2SPM);
 	}
     } else {
 	if (gaddr >= _mem_stack[_mem_stack_depth-1].mem_addr - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack[_mem_stack_depth-1].mem_addr) {
 	    laddr = _spm_stack_base - (_mem_stack[_mem_stack_depth-1].mem_addr - gaddr);
-	    dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
+	    //dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
 	    //laddr = buf1;
+	    dma((void *)buf1, (void *)buf2, size, MEM2SPM);
 	}
     }
 
