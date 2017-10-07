@@ -1,0 +1,119 @@
+#! /usr/bin/env python
+import getopt
+import openpyxl 
+import os
+import subprocess
+import sys
+
+
+
+def getStats(prog, ws, r):
+	#assert (numFuncs >= 2)
+	c = ord('A')
+    	ws[chr(c)+str(r)] = prog
+	c = c+1
+
+
+	# collect statistics of cache-based execution
+	path = "m5out/cache"
+
+	output = subprocess.Popen("grep overall_user_code_accesses "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	overallUserCodeAccesses = 0
+	if output != "":
+		tempList = output.split()
+		overallUserCodeAccesses = float(tempList[1])
+    	ws[chr(c)+str(r)] = overallUserCodeAccesses
+	c = c+1
+
+	output = subprocess.Popen("grep overall_user_stack_accesses "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	overallUserStackAccesses = 0
+	if output != "":
+		tempList = output.split()
+		overallUserStackAccesses = float(tempList[1])
+    	ws[chr(c)+str(r)] = overallUserStackAccesses
+	c = c+1
+
+	output = subprocess.Popen("grep overall_user_heap_accesses "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	overallUserHeapAccesses = 0
+	if output != "":
+		tempList = output.split()
+		overallUserHeapAccesses = float(tempList[1])
+    	ws[chr(c)+str(r)] = overallUserHeapAccesses
+	c = c+1
+
+	output = subprocess.Popen("grep overall_user_global_accesses "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	overallUserGlobalAccesses = 0
+	if output != "":
+		tempList = output.split()
+		overallUserGlobalAccesses = float(tempList[1])
+    	ws[chr(c)+str(r)] = overallUserGlobalAccesses
+	c = c+1
+    	ws[chr(c)+str(r)] = overallUserHeapAccesses / (overallUserCodeAccesses + overallUserStackAccesses + overallUserHeapAccesses + overallUserGlobalAccesses)
+	c = c+1
+    	ws[chr(c)+str(r)] = overallUserHeapAccesses / (overallUserStackAccesses + overallUserHeapAccesses + overallUserGlobalAccesses)
+	c = c+1
+
+
+
+
+programs = [
+	"adpcm.decode", 
+	"adpcm.encode",
+	"basicmath",
+	"CRC32",
+	"dijkstra",
+	"FFT",
+	"IFFT",
+	"patricia",
+	"rijndael.decode",
+	"rijndael.encode",
+	"sha",
+	"stringsearch",
+	"susan.corners",
+	"susan.edges",
+	"susan.smoothing",
+]
+
+
+# Get options
+if __name__ == "__main__":
+
+	config = 1
+    	output = "number_of_accesses.xlsx"
+
+
+
+	wb = openpyxl.Workbook()
+	ws1 = wb.active
+	ws1.title = "Number of Accesses"
+	c = ord('A')
+	ws1[chr(c) +'1'] = "benchmark"
+	c = c+1
+	ws1[chr(c) +'1'] = "code"
+	c = c+1
+	ws1[chr(c) +'1'] = "stack"
+	c = c+1
+	ws1[chr(c) +'1'] = "heap"
+	c = c+1
+	ws1[chr(c) +'1'] = "global"
+	c = c+1
+	ws1[chr(c) + '1'] = "percentage of heap Accesses (including code)"
+	c = c+1
+	ws1[chr(c) + '1'] = "percentage of heap Accesses (excluding code)"
+	c = c+1
+
+	cwd = os.getcwd()
+	work_dir = os.path.dirname(cwd)  + "/mibench"
+	os.chdir(work_dir)
+  
+	r = 2
+	for prog in programs:
+		print prog
+		os.chdir(prog)
+		getStats(prog, ws1, r)
+		r = r+1
+	    	os.chdir(work_dir)
+	os.chdir(cwd)
+	wb.save(output)
+
+
