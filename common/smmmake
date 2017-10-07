@@ -17,7 +17,7 @@ def create_makefile_smmint(arguments="", infile = "", outfile="", isramSize = 0,
 PROGRAM = ${program}
 
 WD=$(HOME)/Workspace
-SMMDIR=$(WD)/smm_framework
+SMMDIR=$(WD)/smm_frameworks
 
 INCLUDEDIRS=
 INCLUDE=
@@ -557,7 +557,7 @@ def create_makefile_cache(outfile="", cachingOption = "integrated"):
 PROGRAM = ${program}
 
 WD=$(HOME)/Workspace
-SMMDIR=$(WD)/smm_framework
+SMMDIR=$(WD)/smm_frameworks
 
 INCLUDEDIRS=
 INCLUDE=
