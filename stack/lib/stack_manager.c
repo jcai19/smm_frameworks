@@ -60,18 +60,21 @@ char * _l2g(char *laddr)
 
 // translate a main memory address to an SPM address
 char * _g2l(char *gaddr, unsigned long size) {
-    // do address translation only if the address passed in is in stack in the main memory
-    laddr = gaddr; // set return value to the passed in address by default
-    if (_mem_stack_depth == 0) {
+    laddr = gaddr;
+    if (_mem_stack_depth == 0) { // The entire stack is in SPM, i.e. no stack data needs to be copied from main memory
+	// Revert address translation of l2g if gaddr is between the memory stack pointer and it minusing the size of SPM stack
 	if (gaddr >= _mem_stack_base - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack_base) {
 	    laddr = _spm_stack_base - (_mem_stack_base - gaddr);
-	    //dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
-	    //laddr = buf1;
-	    dma((void *)buf1, (void *)buf2, size, MEM2SPM);
 	}
-    } else {
+
+    } else { // Part of stack is currently in main memory
+	// Revert address translation of l2g if gaddr is not within memory stack, but between the memory stack pointer and it minusing the size of SPM stack
 	if (gaddr >= _mem_stack[_mem_stack_depth-1].mem_addr - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack[_mem_stack_depth-1].mem_addr) {
 	    laddr = _spm_stack_base - (_mem_stack[_mem_stack_depth-1].mem_addr - gaddr);
+	}
+	// Copy value from main memory to SPM if gaddr is in the memory stack (between memory stack base and memory stack pointer)
+	else if (gaddr >= _mem_stack[_mem_stack_depth-1].mem_addr && gaddr < _mem_stack_base) {
+	    // TODO: return an SPM address instead
 	    //dma((void *)buf1, (void *)gaddr, size, MEM2SPM);
 	    //laddr = buf1;
 	    dma((void *)buf1, (void *)buf2, size, MEM2SPM);
@@ -81,18 +84,11 @@ char * _g2l(char *gaddr, unsigned long size) {
     return laddr;
 }
 
-void _ptr_wr(char *gaddr, unsigned long size) {
-    if (_mem_stack_depth == 0) {
-	if (gaddr >= _mem_stack_base - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack_base) {
-	    laddr = _spm_stack_base - (_mem_stack_base - gaddr);
-	    // TODO writes to the main memory
-	    dma((void *)buf1, (void *)buf2, size, SPM2MEM);
-	} 
-    } else {
-	if (gaddr >= _mem_stack[_mem_stack_depth-1].mem_addr - (_spm_stack_base - _stack_pointer) && gaddr < _mem_stack[_mem_stack_depth-1].mem_addr) {
-	    laddr = _spm_stack_base - (_mem_stack[_mem_stack_depth-1].mem_addr - gaddr);
-	    // TODO writes to the main memory
-	    dma((void *)buf1, (void *)buf2, size, SPM2MEM);
-	} 
+void _g2l_wr(char *gaddr, unsigned long size) {
+    if (_mem_stack_depth > 0) {
+	 if (gaddr >= _mem_stack[_mem_stack_depth-1].mem_addr && gaddr < _mem_stack_base) {
+	    // TODO: Write a real value to the main memory address instead
+	    dma((void *)buf1, (void *)buf2, size, MEM2SPM);
+	}
     }
 }

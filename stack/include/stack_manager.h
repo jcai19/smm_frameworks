@@ -24,6 +24,6 @@ void _sload() __attribute__((noinline));
 
 char * _l2g(char *) __attribute__((noinline));
 char * _g2l(char *, unsigned long) __attribute__((noinline));
-//void _ptr_wr(char *, unsigned long) __attribute__((noinline));
+void _g2l_wr(char *, unsigned long) __attribute__((noinline));
 
 #endif
