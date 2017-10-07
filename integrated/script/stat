@@ -7,7 +7,6 @@ import sys
 
 def getCacheSimInsts():
     	# without the extra instructions inserted for caching stack data from predefined functions
-#	path = "cache-siminst/cache"
 	path = "code-m5out/cache"
 	output = subprocess.Popen("grep sim_insts "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
@@ -170,7 +169,7 @@ def getIntegratedMnmtStats(prog, ws, r, prefix = ""):
     	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
 
-	output = subprocess.Popen("grep system.cpu.num_func_calls_ptr_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	output = subprocess.Popen("grep system.cpu.num_func_calls_g2l_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
     	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
@@ -299,7 +298,7 @@ def getCodeMnmtStats(prog, ws, r, prefix = ""):
     	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
 
-	output = subprocess.Popen("grep system.cpu.num_func_calls_ptr_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	output = subprocess.Popen("grep system.cpu.num_func_calls_g2l_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
     	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
@@ -425,7 +424,7 @@ def getStackMnmtStats(prog, ws, r, prefix = ""):
     	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
 
-	output = subprocess.Popen("grep system.cpu.num_func_calls_ptr_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
+	output = subprocess.Popen("grep system.cpu.num_func_calls_g2l_wr "+ path +"/stats.txt", stdout=subprocess.PIPE, shell=True).communicate()[0]
 	tempList = output.split()
     	ws[chr(c)+str(r)] = float(tempList[1])
 	c = c+1
@@ -534,7 +533,7 @@ if __name__ == "__main__":
 	c = c+1
 	ws1[chr(c)+str(r)] = "#g2l"
 	c = c+1
-	ws1[chr(c)+str(r)] = "#ptr_wr"
+	ws1[chr(c)+str(r)] = "#g2l_wr"
 	c = c+1
 	ws1[chr(c)+str(r)] = "time"
 	c = c+2
